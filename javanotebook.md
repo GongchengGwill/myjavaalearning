@@ -184,7 +184,7 @@ switch(a){
 }
 ```
 
-需要注意 `break` 很重要，因为 switch 存在穿透的情况。
+需要注意 `break` 很重要 因为 switch 存在穿透的情况。
 
 **另一种方式**
 
@@ -218,3 +218,178 @@ int a = switch(geng){
 - `break` 跳出当前循环
 - `continue` 直接进入下一轮循环
 - 两者多搭配 `if` 使用
+
+#### 数组遍历与常用方法
+
+遍历数组可以使用 for 循环，for 循环可以访问数组索引，for each 循环直接迭代每个数组元素，但无法获取索引；
+
+使用 `Arrays.toString()` 可以快速获取数组内容。
+
+可以直接使用 Java 标准库提供的 `Arrays.sort()` 进行排序；
+
+#### 练习：数组倒序排列
+
+```java
+public static void main(String[] args) {
+        int[] ns = { 28, 12, 89, 73, 65, 18, 96, 50, 8, 36 };
+        // 排序前:
+        System.out.println(Arrays.toString(ns));
+        // TODO:
+        for(int i = ns.length - 1; i >= 0; i--){
+            for(int j = 0; j < i; j++){
+                if(ns[j] < ns[j + 1]){
+                    int temp = ns[j];
+                    ns[j] = ns[j + 1];
+                    ns[j + 1] = temp;
+                }
+            }
+        }
+        // 排序后:
+        System.out.println(Arrays.toString(ns));
+        if (Arrays.toString(ns).equals("[96, 89, 73, 65, 50, 36, 28, 18, 12, 8]")) {
+            System.out.println("测试成功");
+        } else {
+            System.out.println("测试失败");
+        }
+    }
+```
+
+#### 多维数组
+
+多维数组的每个数组元素长度都不要求相同；
+
+打印多维数组可以使用 `Arrays.deepToString()`；
+
+## 3. 面向对象编程 OOP
+
+模板和对象 是 类和实例的关系。
+
+指向 instance 的变量都是引用变量。
+
+外部代码通过 public 方法操作实例，内部代码可以调用 private 方法；
+
+理解方法的参数绑定。
+
+### 可变参数
+
+```java
+public void setNames(String... names){
+    this.name = names;
+}
+```
+
+上面的 `setNames()` 就定义了一个可变参数。调用时，可以这么写：
+
+```java
+Group g = new Group();
+g.setNames("Xiao Ming", "Xiao Hong", "Xiao Jun"); // 传入3个String
+g.setNames("Xiao Ming", "Xiao Hong"); // 传入2个String
+g.setNames("Xiao Ming"); // 传入1个String
+g.setNames(); // 传入0个String
+```
+
+### 参数绑定
+
+调用方把参数传递给实例方法时，调用时传递的值会按参数位置一一绑定。
+
+那什么是参数绑定？
+
+#### 例1：基本类型参数的传递
+
+我们先观察一个基本类型参数的传递：
+
+```java
+// 基本类型参数绑定
+public class Main {
+    public static void main(String[] args) {
+        Person p = new Person();
+        int n = 15; // n的值为15
+        p.setAge(n); // 传入n的值
+        System.out.println(p.getAge()); // 15
+        n = 20; // n的值改为20
+        System.out.println(p.getAge()); // 15还是20?
+    }
+}
+
+class Person {
+    private int age;
+
+    public int getAge() {
+        return this.age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
+```
+
+运行代码，从结果可知，修改外部的局部变量 n，不影响实例 p 的 age 字段，原因是 `setAge()` 方法获得的参数，复制了 n 的值，因此，`p.age` 和局部变量 n 互不影响。
+
+**结论：基本类型参数的传递，是调用方值的复制。双方各自的后续修改，互不影响。**
+
+#### 例2：引用类型参数的传递（数组）
+
+我们再看一个传递引用参数的例子：
+
+```java
+// 引用类型参数绑定
+public class Main {
+    public static void main(String[] args) {
+        Person p = new Person();
+        String[] fullname = new String[] { "Homer", "Simpson" };
+        p.setName(fullname); // 传入fullname数组
+        System.out.println(p.getName()); // "Homer Simpson"
+        fullname[0] = "Bart"; // fullname数组的第一个元素修改为"Bart"
+        System.out.println(p.getName()); // "Homer Simpson"还是"Bart Simpson"?
+    }
+}
+
+class Person {
+    private String[] name;
+
+    public String getName() {
+        return this.name[0] + " " + this.name[1];
+    }
+
+    public void setName(String[] name) {
+        this.name = name;
+    }
+}
+```
+
+注意到 `setName()` 的参数现在是一个数组。一开始，把 fullname 数组传进去，然后，修改 fullname 数组的内容，结果发现，实例 p 的字段 `p.name` 也被修改了！
+
+**结论：引用类型参数的传递，调用方的变量，和接收方的参数变量，指向的是同一个对象。双方任意一方对这个对象的修改，都会影响对方（因为指向同一个对象嘛）。**
+
+#### 例3：String 的特殊情况
+
+有了上面的结论，我们再看一个例子：
+
+```java
+// 引用类型参数绑定
+public class Main {
+    public static void main(String[] args) {
+        Person p = new Person();
+        String bob = "Bob";
+        p.setName(bob); // 传入bob变量
+        System.out.println(p.getName()); // "Bob"
+        bob = "Alice"; // bob改名为Alice
+        System.out.println(p.getName()); // "Bob"还是"Alice"?
+    }
+}
+
+class Person {
+    private String name;
+
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+```
+
+不要怀疑引用参数绑定的机制，试解释为什么上面的代码两次输出都是"Bob"。
