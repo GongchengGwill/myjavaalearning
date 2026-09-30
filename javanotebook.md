@@ -84,7 +84,7 @@
 
 除开基本数据类型 其他的都是引用类型，最为常见的是 `String` 字符串类型。
 
-- **变量**：代指 `var`，创建变量的时候可以省略变量类型
+- **变量**：代指 `var`，Java 10 引入的局部变量类型推断（编译器自动推断类型）
 - **常量**：在数据前面添加 `final` 来固定数据不被修改
 
 ### 整数运算
@@ -135,7 +135,7 @@ int money = new int[10];
 或者是初始化时就定义数据，从而自动定义数组长度，例如：
 
 ```java
-int money = new int[]{1, 2, 3};
+int[] money = new int[]{1, 2, 3};
 ```
 
 数组也是一个引用类型，所以也和字符串一样，指向另一个数据时，原本的内容不会被删除，只是不再被原来的数组位置找到了。
@@ -158,6 +158,63 @@ System.out.printf("本次成绩提升的百分比为%.2f%%", ans);
 
 #### 判断相等
 
-浮点判断相等不能直接用 `==` 运算符，需要使用 `equals()` 函数。
+浮点数比较的正确做法是给一个误差范围。
+
+引用类型判断相等不能直接用 `==` 运算符，需要使用 `equals()` 函数。
 
 引用类型判断内容的时候也是这样子，同时还要避免 `NullPointerException`。
+
+#### switch 多重选择
+
+两种方式。
+
+**方式一**
+
+```java
+switch(a){
+    case 1:
+        sout();
+        break;
+    case 2:
+        sout();
+        break;
+    ...
+    default:
+        break;
+}
+```
+
+需要注意 `break` 很重要，因为 switch 存在穿透的情况。
+
+**另一种方式**
+
+```java
+switch(a){
+    case "hajimi" -> sout();
+    case "nanbeilvdou" -> sout();
+    ...
+    default -> {
+        sout();
+        sout();
+    }
+}
+```
+
+可以直接用这个来赋值：
+
+```java
+int a = switch(geng){
+    case "niulai" -> 1;
+    case "wodingsini" -> 2;
+    default -> {
+        int code = geng.hashCode();
+        yield code;
+    }
+}
+```
+
+#### while / do while / for 循环
+
+- `break` 跳出当前循环
+- `continue` 直接进入下一轮循环
+- 两者多搭配 `if` 使用
