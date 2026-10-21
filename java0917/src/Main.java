@@ -1,33 +1,57 @@
+import java.sql.SQLOutput;
 import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        Person ming = new Person();
-        ming.setName("小明");
-        ming.setAge(12);
-        System.out.println(ming.getAge());
+        Income[] incomes = new Income[]{
+                new IncomeByWork(6000),
+                new IncomeByWrite(500)
+        };
+        int tax = 0;
+        for(Income income : incomes){
+            tax += income.getTax();
+        }
+        System.out.println(tax);
+    }
+
+}
+abstract class Income{
+    protected double income;
+    public Income(double i){
+        this.income = i;
+    }
+
+    protected abstract double getTax();
+}
+
+class IncomeByWork extends Income {
+
+    public IncomeByWork(int i) {
+        super(i);
+    }
+
+    @Override
+    protected double getTax() {
+        return (income - 5000) * 0.2;
     }
 }
 
-class Person {
-    private String name;
-    private int age;
-    public String getName() {
-        return name;
-    }
-    public void setName(String name) {
-        this.name = name;
+class IncomeByWrite extends Income {
+
+    public IncomeByWrite(int i) {
+        super(i);
     }
 
-    public void setAge(int i) {
-        this.age = i;
-    }
-
-    public int getAge() {
-        return this.age;
+    @Override
+    protected double getTax() {
+        return income * 0.5;
     }
 }
+
+
+
+
 
 //public class Main {
 //    public static void main(String[] args) {

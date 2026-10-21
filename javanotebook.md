@@ -392,4 +392,253 @@ class Person {
 }
 ```
 
-不要怀疑引用参数绑定的机制，试解释为什么上面的代码两次输出都是"Bob"。
+### 构造方法
+
+没有在构造方法中初始化字段时，引用类型的字段默认是 `null`，数值类型的字段用默认值，`int` 类型默认值是 `0`，布尔类型默认值是 `false`：
+
+### 方法重载
+
+如果有一系列方法，它们的功能都是类似的，只有参数有所不同，那么，可以把这一组方法名做成同名方法。
+
+这种方法名相同，但各自的参数不同，称为方法重载（`Overload`）。
+
+### 继承
+
+继承是面向对象编程中非常强大的一种机制，它首先可以复用代码。当我们让 `Student` 从 `Person` 继承时，`Student` 就获得了 `Person` 的所有功能，我们只需要为 `Student` 编写新增的功能。
+
+Java 使用 `extends` 关键字来实现继承。
+
+**注意**
+
+子类自动获得了父类的所有字段，严禁定义与父类重名的字段！
+
+在 Java 中，没有明确写 `extends` 的类，编译器会自动加上 `extends Object`。所以，任何类，除了 `Object`，都会继承自某个类。
+
+Java 只允许一个 class 继承自一个类，因此，一个类有且仅有一个父类。只有 `Object` 特殊，它没有父类。
+
+继承有个特点，就是子类无法访问父类的 `private` 字段或者 `private` 方法。
+
+这使得继承的作用被削弱了。为了让子类可以访问父类的字段，我们需要把 `private` 改为 `protected`。用 `protected` 修饰的字段可以被子类访问：
+
+因此，`protected` 关键字可以把字段和方法的访问权限控制在继承树内部，一个 `protected` 字段和方法可以被其子类，以及子类的子类所访问
+
+`super` 关键字表示父类（超类）。子类引用父类的字段时，可以用 `super.fieldName`。
+
+但是，在某些时候，就必须使用 `super`。如果父类没有默认的构造方法，子类就必须显式调用 `super()` 并给出参数以便让编译器定位到父类的一个合适的构造方法。
+
+#### 阻止继承
+
+正常情况下，只要某个 class 没有 `final` 修饰符，那么任何类都可以从该 class 继承。从 Java 15 开始，允许使用 `sealed` 修饰 class，并通过 `permits` 明确写出能够从该 class 继承的子类名称
+
+#### 向上转型
+
+这种把一个子类类型安全地变为父类类型的赋值，被称为向上转型（upcasting）。
+
+向上转型实际上是把一个子类型安全地变为更加抽象的父类型
+
+#### 多态
+
+继承关系中，子类如果定义了一个与父类方法签名完全相同的方法，被称为覆写（Override）
+
+Override 和 Overload 不同的是，如果方法签名不同，就是 Overload，Overload 方法是一个新方法；如果方法签名相同，并且返回值也相同，就是 `Override`
+
+方法名相同，方法参数相同，但方法返回值不同，也是不同的方法。在 Java 程序中，出现这种情况，编译器会报错。
+
+那么，一个实际类型为 `Student`，引用类型为 `Person` 的变量，调用其 `run()` 方法，调用的是 `Person` 还是 `Student` 的 `run()` 方法？
+
+运行一下上面的代码就可以知道，实际上调用的方法是 `Student` 的 `run()` 方法。因此可得出结论：
+
+**Java 的实例方法调用是基于运行时的实际类型的动态调用，而非变量的声明类型。**
+
+这个非常重要的特性在面向对象编程中称之为多态。它的英文拼写非常复杂：Polymorphic。
+
+多态是指，针对某个类型的方法调用，其真正执行的方法取决于运行时期实际类型的方法。例如：
+
+```java
+Person p = new Student();
+p.run(); // 无法确定运行时究竟调用哪个run()方法
+```
+
+多态具有一个非常强大的功能，就是允许添加更多类型的子类实现功能扩展，却不需要修改基于父类的代码。
+
+#### 调用 super
+
+在子类的覆写方法中，如果要调用父类的被覆写的方法，可以通过 `super` 来调用。例如：
+
+```java
+class Person {
+    protected String name;
+    public String hello() {
+        return "Hello, " + name;
+    }
+}
+
+class Student extends Person {
+    @Override
+    public String hello() {
+        // 调用父类的hello()方法:
+        return super.hello() + "!";
+    }
+}
+```
+
+#### final 关键字
+
+继承可以允许子类覆写父类的方法。如果一个父类不允许子类对它的某个方法进行覆写，可以把该方法标记为 `final`。用 `final` 修饰的方法不能被 `Override`
+
+如果一个类不希望任何其他类继承自它，那么可以把这个类本身标记为 `final`。用 `final` 修饰的类不能被继承
+
+对于一个类的实例字段，同样可以用 `final` 修饰。用 `final` 修饰的字段在初始化后不能被修改
+
+#### 抽象类
+
+答案是不行，会导致编译错误，因为定义方法的时候，必须实现方法的语句。
+
+能不能去掉父类的 `run()` 方法？
+
+答案还是不行，因为去掉父类的 `run()` 方法，就失去了多态的特性。
+
+如果父类的方法本身不需要实现任何功能，仅仅是为了定义方法签名，目的是让子类去覆写它，那么，可以把父类的方法声明为抽象方法：
+
+必须把 `Person` 类本身也声明为 `abstract`，才能正确编译它：
+
+```java
+abstract class Person {
+    public abstract void run();
+}
+```
+
+使用 `abstract` 修饰的类就是抽象类。我们无法实例化一个抽象类：
+
+```java
+Person p = new Person(); // 编译错误
+```
+
+因为抽象类本身被设计成只能用于被继承，因此，抽象类可以强迫子类实现其定义的抽象方法，否则编译会报错。因此，抽象方法实际上相当于定义了“规范”。
+
+##### 面向抽象编程
+
+当我们定义了抽象类 `Person`，以及具体的 `Student`、`Teacher` 子类的时候，我们可以通过抽象类 `Person` 类型去引用具体的子类的实例：
+
+```java
+Person s = new Student();
+Person t = new Teacher();
+```
+
+这种引用抽象类的好处在于，我们对其进行方法调用，并不关心 `Person` 类型变量的具体子类型。
+
+**编写抽象编程来计算需要交的税（以下是我自己写的任务）**
+
+```java
+public class Main {  
+    public static void main(String[] args) {  
+        Income[] incomes = new Income[]{  
+                new IncomeByWork(6000),  
+                new IncomeByWrite(500)  
+        };  
+        int tax = 0;  
+        for(Income income : incomes){  
+            tax += income.getTax();  
+        }  
+        System.out.println(tax);  
+    }  
+}  
+abstract class Income{  
+    protected double income;  
+    public Income(double i){  
+        this.income = i;  
+    }  
+  
+    protected abstract double getTax();  
+}  
+  
+class IncomeByWork extends Income {  
+  
+    public IncomeByWork(int i) {  
+        super(i);  
+    }  
+  
+    @Override  
+    protected double getTax() {  
+        return (income - 5000) * 0.2;  
+    }  
+}  
+  
+class IncomeByWrite extends Income {  
+  
+    public IncomeByWrite(int i) {  
+        super(i);  
+    }  
+  
+    @Override  
+    protected double getTax() {  
+        return income * 0.5;  
+    }  
+}
+```
+
+在抽象类中，抽象方法本质上是定义接口规范：即规定高层类的接口，从而保证所有子类都有相同的接口实现，这样，多态就能发挥出威力。
+
+#### 接口
+
+如果一个抽象类没有字段，所有方法全部都是抽象方法：
+
+```java
+abstract class Person {
+    public abstract void run();
+    public abstract String getName();
+}
+```
+
+就可以把该抽象类改写为接口：`interface`。
+
+```java
+interface Person {
+    void run();
+    String getName();
+}
+```
+
+因为接口定义的所有方法默认都是 `public abstract` 的，所以这两个修饰符不需要写出来（写不写效果都一样）。
+
+当一个具体的 `class` 去实现一个 `interface` 时，需要使用 `implements` 关键字。
+
+我们知道，在 Java 中，一个类只能继承自另一个类，不能从多个类继承。但是，一个类可以实现多个 `interface`，例如：
+
+```java
+class Student implements Person, Hello { // 实现了两个interface
+    ...
+}
+```
+
+##### 接口继承
+
+一个 `interface` 可以继承自另一个 `interface`。`interface` 继承自 `interface` 使用 `extends`，它相当于扩展了接口的方法。例如：
+
+```java
+interface Hello {
+    void hello();
+}
+
+interface Person extends Hello {
+    void run();
+    String getName();
+}
+```
+
+此时，`Person` 接口继承自 `Hello` 接口，因此，`Person` 接口现在实际上有3个抽象方法签名，其中一个来自继承的 `Hello` 接口。
+
+##### default 方法
+
+在接口中，可以定义 `default` 方法。例如，把 `Person` 接口的 `run()` 方法改为 `default` 方法
+
+实现类可以不必覆写 `default` 方法。`default` 方法的目的是，当我们需要给接口新增一个方法时，会涉及到修改全部子类。如果新增的是 `default` 方法，那么子类就不必全部修改，只需要在需要覆写的地方去覆写新增方法。
+
+`default` 方法和抽象类的普通方法是有所不同的。因为 `interface` 没有字段，`default` 方法无法访问字段，而抽象类的普通方法可以访问实例字段。
+
+##### 接口小结
+
+- Java 的接口（interface）定义了纯抽象规范，一个类可以实现多个接口；
+- 接口也是数据类型，适用于向上转型和向下转型；
+- 接口的所有方法都是抽象方法，接口不能定义实例字段；
+- 接口可以定义 `default` 方法（JDK>=1.8）。
