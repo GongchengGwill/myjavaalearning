@@ -1,53 +1,86 @@
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLOutput;
 import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        Income[] incomes = new Income[]{
-                new IncomeByWork(6000),
-                new IncomeByWrite(500)
-        };
-        int tax = 0;
-        for(Income income : incomes){
-            tax += income.getTax();
+        String[] fields = { "name", "position", "salary" };
+        String table = "employee";
+        String insert = buildInsertSql(table, fields);
+        System.out.println(insert);
+        String s = "INSERT INTO employee (name, position, salary) VALUES (?, ?, ?)";
+        System.out.println(s.equals(insert) ? "测试成功" : "测试失败");
+    }
+
+    static String buildInsertSql(String table, String[] fields) {
+        StringBuilder sb = new StringBuilder(1024);
+        sb.append("INSERT INTO ").append(table).append(" (");
+        for(int i = 0; i < fields.length; i++){
+            if(i == fields.length - 1){
+                sb.append(fields[i]);
+            }else {
+                sb.append(fields[i]).append(", ");
+            }
         }
-        System.out.println(tax);
+        sb.append(") VALUES (");
+        for(int i = 0; i < fields.length; i++){
+            if(i == fields.length - 1){
+                sb.append("?");
+            }else {
+                sb.append("?").append(", ");
+            }
+        }
+        sb.append(")");
+        return sb.toString();
     }
 
 }
-abstract class Income{
-    protected double income;
-    public Income(double i){
-        this.income = i;
-    }
 
-    protected abstract double getTax();
-}
+//class Person{
+//    public static int count = 0;
+//    public void changecount(int i){
+//        count = i;
+//    }
+//    public static int getCount(){
+//        return count;
+//    }
+//}
 
-class IncomeByWork extends Income {
 
-    public IncomeByWork(int i) {
-        super(i);
-    }
-
-    @Override
-    protected double getTax() {
-        return (income - 5000) * 0.2;
-    }
-}
-
-class IncomeByWrite extends Income {
-
-    public IncomeByWrite(int i) {
-        super(i);
-    }
-
-    @Override
-    protected double getTax() {
-        return income * 0.5;
-    }
-}
+//abstract class Income{
+//    protected double income;
+//    public Income(double i){
+//        this.income = i;
+//    }
+//
+//    protected abstract double getTax();
+//}
+//
+//class IncomeByWork extends Income {
+//
+//    public IncomeByWork(int i) {
+//        super(i);
+//    }
+//
+//    @Override
+//    protected double getTax() {
+//        return (income - 5000) * 0.2;
+//    }
+//}
+//
+//class IncomeByWrite extends Income {
+//
+//    public IncomeByWrite(int i) {
+//        super(i);
+//    }
+//
+//    @Override
+//    protected double getTax() {
+//        return income * 0.5;
+//    }
+//}
 
 
 
