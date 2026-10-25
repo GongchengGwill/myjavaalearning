@@ -642,3 +642,374 @@ interface Person extends Hello {
 - 接口也是数据类型，适用于向上转型和向下转型；
 - 接口的所有方法都是抽象方法，接口不能定义实例字段；
 - 接口可以定义 `default` 方法（JDK>=1.8）。
+
+## 3.1 静态字段和静态方法
+
+用 `static` 修饰的字段，称为静态字段：`static field`
+
+对于静态字段，无论修改哪个实例的静态字段，效果都是一样的：所有实例的静态字段都被修改了，原因是静态字段并不属于实例：
+
+不推荐用 `实例变量.静态字段` 去访问静态字段，因为在 Java 程序中，实例对象并没有静态字段。在代码中，实例对象能访问静态字段只是因为编译器可以根据实例类型自动转换为 `类名.静态字段` 来访问静态对象。
+
+推荐用类名来访问静态字段。可以把静态字段理解为描述 `class` 本身的字段。
+
+有静态字段，就有静态方法。用 `static` 修饰的方法称为静态方法。
+
+调用实例方法必须通过一个实例变量，而调用静态方法则不需要实例变量，通过类名就可以调用。静态方法类似其它编程语言的函数。
+
+静态方法经常用于工具类。例如：
+
+- `Arrays.sort()`
+- `Math.random()`
+
+静态方法也经常用于辅助方法。注意到 Java 程序的入口 `main()` 也是静态方法。
+
+因为 `interface` 是一个纯抽象类，所以它不能定义实例字段。但是，`interface` 是可以有静态字段的，并且静态字段必须为 `final` 类型。实际上，因为 `interface` 的字段只能是 `public static final` 类型，所以我们可以把这些修饰符都去掉
+
+```java
+public interface Person {
+    // 编译器会自动加上public static final:
+    int MALE = 1;
+    int FEMALE = 2;
+}
+```
+
+### 练习：统计实例创建的个数
+
+给 `Person` 类增加一个静态字段 `count` 和静态方法 `getCount()`，统计实例创建的个数。
+
+```java
+public class Main {  
+    public static void main(String[] args) {  
+        Person p1 = new Person();  
+        Person p2 = new Person();  
+        p1.changecount(100);  
+        System.out.println(Person.getCount());  
+        p2.changecount(233);  
+        System.out.println(Person.getCount());  
+    }  
+}  
+  
+class Person{  
+    public static int count = 0;  
+    public void changecount(int i){  
+        count = i;  
+    }  
+    public static int getCount(){  
+        return count;  
+    }  
+}
+```
+
+## 3.1.1 包
+
+在 Java 中，我们使用 `package` 来解决名字冲突。
+
+Java 定义了一种名字空间，称之为包：`package`。一个类总是属于某个包，类名（比如 `Person`）只是一个简写，真正的完整类名是 `包名.类名`。
+
+在定义 `class` 的时候，我们需要在第一行声明这个 `class` 属于哪个包。
+
+小明的 `Person.java` 文件：
+
+```java
+package ming; // 申明包名ming
+
+public class Person {
+}
+```
+
+小军的 `Arrays.java` 文件：
+
+```java
+package mr.jun; // 申明包名mr.jun
+
+public class Arrays {
+}
+```
+
+包没有父子关系。`java.util` 和 `java.util.zip` 是不同的包，两者没有任何继承关系。
+
+位于同一个包的类，可以访问包作用域的字段和方法。不用 `public`、`protected`、`private` 修饰的字段和方法就是包作用域。
+
+### import
+
+在一个 `class` 中，我们总会引用其他的 `class`，有三种写法：
+
+第一种，直接写出完整类名
+
+第二种写法是用 `import` 语句，导入小军的 `Arrays`，然后写简单类名
+
+还有一种 `import static` 的语法，它可以导入一个类的静态字段和静态方法：
+
+如果有两个 `class` 名称相同，例如，`mr.jun.Arrays` 和 `java.util.Arrays`，那么只能 `import` 其中一个，另一个必须写完整类名
+
+### 最佳实践
+
+为了避免名字冲突，我们需要确定唯一的包名。推荐的做法是使用倒置的域名来确保唯一性。例如：
+
+- `org.apache`
+- `org.apache.commons.log`
+- `com.liaoxuefeng.sample`
+
+子包就可以根据功能自行命名。
+
+## 3.1.2 编译和运行
+
+假设我们创建了如下的目录结构：
+
+```text
+work
+├── bin
+└── src
+    └── com
+        └── itranswarp
+            ├── sample
+            │   └── Main.java
+            └── world
+                └── Person.java
+```
+
+使用 Windows 的 PowerShell 可以利用 `Get-ChildItem` 来列出指定目录下的所有 `.java` 文件：
+
+```powershell
+PS C:\work> (Get-ChildItem -Path .\src -Recurse -Filter *.java).FullName
+C:\work\src\com\itranswarp\sample\Main.java
+C:\work\src\com\itranswarp\world\Person.java
+```
+
+因此，编译命令可写为：
+
+```powershell
+PS C:\work> javac -d .\bin (Get-ChildItem -Path .\src -Recurse -Filter *.java).FullName
+```
+
+现在，我们就可以直接运行 `class` 文件了。根据当前目录的位置确定 classpath，例如，当前目录仍为 `work`，则 classpath 为 `bin` 或者 `./bin`：
+
+```console
+$ java -cp bin com.itranswarp.sample.Main 
+Hello, world!
+```
+
+请按如下包结构创建工程项目：
+
+```text
+oop-package
+└── src
+    └── com
+        └── itranswarp
+            ├── sample
+            │   └── Main.java
+            └── world
+                └── Person.java
+```
+
+![Pasted image 20261025111222](<images/Pasted image 20261025111222.png>)
+
+## 3.1.3 作用域
+
+在 Java 中，我们经常看到 `public`、`protected`、`private` 这些修饰符。在 Java 中，这些修饰符可以用来限定访问作用域。
+
+如果不确定是否需要 `public`，就不声明为 `public`，即尽可能少地暴露对外的字段和方法。
+
+把方法定义为 `package` 权限有助于测试，因为测试类和被测试类只要位于同一个 `package`，测试代码就可以访问被测试类的 `package` 权限方法。
+
+一个 `.java` 文件只能包含一个 `public` 类，但可以包含多个非 `public` 类。如果有 `public` 类，文件名必须和 `public` 类的名字相同。
+
+### 小结
+
+- Java 内建的访问权限包括 `public`、`protected`、`private` 和 `package` 权限；
+- Java 在方法内部定义的变量是局部变量，局部变量的作用域从变量声明开始，到一个块结束；
+- `final` 修饰符不是访问权限，它可以修饰 `class`、`field` 和 `method`；
+- 一个 `.java` 文件只能包含一个 `public` 类，但可以包含多个非 `public` 类。
+
+## 3.1.4 内部类
+
+有一种类，它被定义在另一个类的内部，所以称为内部类（Nested Class）。Java 的内部类分为好几种，通常情况用得不多，但也需要了解它们是如何使用的。
+
+如果一个类定义在另一个类的内部，这个类就是 Inner Class：
+
+```java
+class Outer {
+    class Inner {
+        // 定义了一个Inner Class
+    }
+}
+```
+
+上述定义的 `Outer` 是一个普通类，而 `Inner` 是一个 Inner Class，它与普通类有个最大的不同，就是 Inner Class 的实例不能单独存在，必须依附于一个 Outer Class 的实例。
+
+Inner Class 和普通 Class 相比，除了能引用 Outer 实例外，还有一个额外的“特权”，就是可以修改 Outer Class 的 `private` 字段，因为 Inner Class 的作用域在 Outer Class 内部，所以能访问 Outer Class 的 `private` 字段和方法。
+
+观察 Java 编译器编译后的 `.class` 文件可以发现，`Outer` 类被编译为 `Outer.class`，而 `Inner` 类被编译为 `Outer$Inner.class`。
+
+### 匿名类
+
+还有一种定义 Inner Class 的方法，它不需要在 Outer Class 中明确地定义这个 Class，而是在方法内部，通过匿名类（Anonymous Class）来定义。
+
+`Runnable` 本身是接口，接口是不能实例化的，所以这里实际上是定义了一个实现了 `Runnable` 接口的匿名类，并且通过 `new` 实例化该匿名类，然后转型为 `Runnable`。在定义匿名类的时候就必须实例化它，定义匿名类的写法如下：
+
+```java
+Runnable r = new Runnable() {
+    // 实现必要的抽象方法...
+};
+```
+
+### 静态内部类（Static Nested Class）
+
+最后一种内部类和 Inner Class 类似，但是使用 `static` 修饰，称为静态内部类（Static Nested Class）
+
+用 `static` 修饰的内部类和 Inner Class 有很大的不同，它不再依附于 `Outer` 的实例，而是一个完全独立的类，因此无法引用 `Outer.this`，但它可以访问 `Outer` 的 `private` 静态字段和静态方法。如果把 `StaticNested` 移到 `Outer` 之外，就失去了访问 `private` 的权限。
+
+## 3.1.5 classpath 与 jar
+
+- JVM 通过环境变量 `classpath` 决定搜索 `class` 的路径和顺序；
+- 强烈建议**不要设置**系统环境变量 `classpath`，建议始终通过 `-cp` 命令传入；
+- jar 包本质上是 zip 格式，相当于目录，可以包含很多 `.class` 文件，方便下载和使用；
+- `MANIFEST.MF` 文件可以提供 jar 包的信息，如 `Main-Class`，这样可以直接运行 jar 包。
+- 高版本的 JDK 可编译输出低版本兼容的 class 文件，但需注意，低版本的 JDK 可能不存在高版本 JDK 添加的类和方法，导致运行时报错。
+- 运行时使用哪个 JDK 版本，编译时就尽量使用同一版本的 JDK 编译源码。
+
+## 3.1.6 模块
+
+- Java 9 引入的模块目的是为了管理依赖；
+- 使用模块可以按需打包 JRE；
+- 使用模块对类的访问权限有了进一步限制。
+
+![Pasted image 20261025125552](<images/Pasted image 20261025125552.png>)
+
+## 3.2 JAVA核心类
+
+### 字符串
+
+当我们想要比较两个字符串是否相同时，要特别注意，我们实际上是想比较字符串的内容是否相同。必须使用 `equals()` 方法而不能用 `==`。
+
+要忽略大小写比较，使用 `equalsIgnoreCase()` 方法。
+
+`String` 类还提供了多种方法来搜索子串、提取子串。
+
+```java
+"Hello".contains("ll"); // true
+```
+
+```java
+"Hello".indexOf("l"); // 2
+"Hello".lastIndexOf("l"); // 3
+"Hello".startsWith("He"); // true
+"Hello".endsWith("lo"); // true
+```
+
+```java
+"Hello".substring(2); // "llo"
+"Hello".substring(2, 4); "ll"
+```
+
+使用 `trim()` 方法可以移除字符串首尾空白字符。空白字符包括空格，`\t`，`\r`，`\n`：
+
+`String` 还提供了 `isEmpty()` 和 `isBlank()` 来判断字符串是否为空和空白字符串
+
+要在字符串中替换子串，有两种方法。一种是根据字符或字符串替换：
+
+```java
+String s = "hello";
+s.replace('l', 'w'); // "hewwo"，所有字符'l'被替换为'w'
+s.replace("ll", "~~"); // "he~~o"，所有子串"ll"被替换为"~~"
+```
+
+另一种是通过正则表达式替换：
+
+```java
+String s = "A,,B;C ,D";
+s.replaceAll("[\\,\\;\\s]+", ","); // "A,B,C,D"
+```
+
+要分割字符串，使用 `split()` 方法，并且传入的也是正则表达式：
+
+```java
+String s = "A,B,C,D";
+String[] ss = s.split("\\,"); // {"A", "B", "C", "D"}
+```
+
+拼接字符串使用静态方法 `join()`，它用指定的字符串连接字符串数组：
+
+```java
+String[] arr = {"A", "B", "C"};
+String s = String.join("***", arr);
+```
+
+要把任意基本类型或引用类型转换为字符串，可以使用静态方法 `valueOf()`，这是一个重载方法，编译器会根据参数自动选择合适的方法：
+
+要把字符串转换为其他类型，就需要根据情况。例如，把字符串转换为 `int` 类型：
+
+```java
+int n1 = Integer.parseInt("123"); // 123
+int n2 = Integer.parseInt("ff", 16); // 按十六进制转换，255
+```
+
+要特别注意，`Integer` 有个 `getInteger(String)` 方法，它不是将字符串转换为 `int`，而是把该字符串对应的系统变量转换为 `Integer`：
+
+```java
+Integer.getInteger("java.version"); // 版本号，11
+```
+
+`String` 和 `char[]` 类型可以互相转换，方法是：
+
+```java
+char[] cs = "Hello".toCharArray(); // String -> char[]
+String s = new String(cs); // char[] -> String
+```
+
+### StringBuilder
+
+Java 编译器对 `String` 做了特殊处理，使得我们可以直接用 `+` 拼接字符串。
+
+虽然可以直接拼接字符串，但是，在循环中，每次循环都会创建新的字符串对象，然后扔掉旧的字符串。这样，绝大部分字符串都是临时对象，不但浪费内存，还会影响 GC 效率。
+
+为了能高效拼接字符串，Java 标准库提供了 `StringBuilder`，它是一个可变对象，可以预分配缓冲区，这样，往 `StringBuilder` 中新增字符时，不会创建新的临时对象：
+
+```java
+StringBuilder sb = new StringBuilder(1024);
+for (int i = 0; i < 1000; i++) {
+    sb.append(',');
+    sb.append(i);
+}
+String s = sb.toString();
+```
+
+`StringBuilder` 和 `StringBuffer` 接口完全相同，现在完全没有必要使用 `StringBuffer`。
+
+### 练习：构造 INSERT 语句
+
+请使用 `StringBuilder` 构造一个 `INSERT` 语句：
+
+```java
+public static void main(String[] args) {  
+    String[] fields = { "name", "position", "salary" };  
+    String table = "employee";  
+    String insert = buildInsertSql(table, fields);  
+    System.out.println(insert);  
+    String s = "INSERT INTO employee (name, position, salary) VALUES (?, ?, ?)";  
+    System.out.println(s.equals(insert) ? "测试成功" : "测试失败");  
+}  
+  
+static String buildInsertSql(String table, String[] fields) {  
+    StringBuilder sb = new StringBuilder(1024);  
+    sb.append("INSERT INTO ").append(table).append(" (");  
+    for(int i = 0; i < fields.length; i++){  
+        if(i == fields.length - 1){  
+            sb.append(fields[i]);  
+        }else {  
+            sb.append(fields[i]).append(", ");  
+        }  
+    }  
+    sb.append(") VALUES (");  
+    for(int i = 0; i < fields.length; i++){  
+        if(i == fields.length - 1){  
+            sb.append("?");  
+        }else {  
+            sb.append("?").append(", ");  
+        }  
+    }  
+    sb.append(")");  
+    return sb.toString();  
+}
+```
