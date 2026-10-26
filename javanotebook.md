@@ -1013,3 +1013,1098 @@ static String buildInsertSql(String table, String[] fields) {
     return sb.toString();  
 }
 ```
+
+### StringJoiner
+
+类似用分隔符拼接数组的需求很常见，所以 Java 标准库还提供了一个 `StringJoiner` 来干这个事
+
+`String` 还提供了一个静态方法 `join()`，这个方法在内部使用了 `StringJoiner` 来拼接字符串，在不需要指定“开头”和“结尾”的时候，用 `String.join()` 更方便：
+
+```java
+String[] names = {"Bob", "Alice", "Grace"};
+var s = String.join(", ", names);
+```
+
+#### 练习：构造 SELECT 语句
+
+请使用 `StringJoiner` 构造一个 `SELECT` 语句：
+
+```java
+public static void main(String[] args) {  
+    String[] fields = { "name", "position", "salary" };  
+    String table = "employee";  
+    String select = buildSelectSql(table, fields);  
+    System.out.println(select);  
+    System.out.println("SELECT name, position, salary FROM employee".equals(select) ? "测试成功" : "测试失败");  
+}  
+  
+static String buildSelectSql(String table, String[] fields) {  
+    var s = new StringJoiner(", ", "SELECT ", " FROM ");  
+    for(String field : fields) s.add(field);  
+    String ans = s.toString();  
+    return ans + table;  
+}
+```
+
+### 包装类型
+
+引用类型可以赋值为 `null`，表示空，但基本类型不能赋值为 `null`
+
+那么，如何把一个基本类型视为对象（引用类型）？
+
+比如，想要把 `int` 基本类型变成一个引用类型，我们可以定义一个 `Integer` 类，它只包含一个实例字段 `int`，这样，`Integer` 类就可以视为 `int` 的包装类
+
+实际上，因为包装类型非常有用，Java 核心库为每种基本类型都提供了对应的包装类型：
+
+#### 自动装箱与拆箱（Auto Boxing）
+
+因为 `int` 和 `Integer` 可以互相转换：
+
+```java
+int i = 100;
+Integer n = Integer.valueOf(i);
+int x = n.intValue();
+```
+
+所以，Java 编译器可以帮助我们自动在 `int` 和 `Integer` 之间转型：
+
+```java
+Integer n = 100; // 编译器自动使用Integer.valueOf(int)
+int x = n; // 编译器自动使用Integer.intValue()
+```
+
+这种直接把 `int` 变为 `Integer` 的赋值写法，称为自动装箱（Auto Boxing），反过来，把 `Integer` 变为 `int` 的赋值写法，称为自动拆箱（Auto Unboxing）
+
+所有的包装类型都是不变类。我们查看 `Integer` 的源码可知，它的核心代码如下：
+
+```java
+public final class Integer {
+    private final int value;
+}
+```
+
+因此，一旦创建了 `Integer` 对象，该对象就是不变的。
+
+对两个 `Integer` 实例进行比较要特别注意：绝对不能用 `==` 比较，因为 `Integer` 是引用类型，必须使用 `equals()` 比较
+
+#### 静态工厂方法
+
+因为 `Integer.valueOf()` 可能始终返回同一个 `Integer` 实例，因此，在我们自己创建 `Integer` 的时候，以下两种方法：
+
+- 方法1：`Integer n = new Integer(100);`
+- 方法2：`Integer n = Integer.valueOf(100);`
+
+方法2更好，因为方法1总是创建新的 `Integer` 实例，方法2把内部优化留给 `Integer` 的实现者去做，即使在当前版本没有优化，也有可能在下一个版本进行优化。
+
+我们把能创建“新”对象的静态方法称为静态工厂方法。`Integer.valueOf()` 就是静态工厂方法，它尽可能地返回缓存的实例以节省内存。
+
+**最佳实践**
+
+创建新对象时，优先选用静态工厂方法而不是 new 操作符。
+
+#### Number
+
+最后，所有的整数和浮点数的包装类型都继承自 `Number`，因此，可以非常方便地直接通过包装类型获取各种基本类型：
+
+```java
+// 向上转型为Number:
+Number num = new Integer(999);
+// 获取byte, int, long, float, double:
+byte b = num.byteValue();
+int n = num.intValue();
+long ln = num.longValue();
+float f = num.floatValue();
+double d = num.doubleValue();
+```
+
+### JavaBean
+
+在 Java 中，有很多 `class` 的定义都符合这样的规范：
+
+- 若干 `private` 实例字段；
+- 通过 `public` 方法来读写实例字段。
+
+例如：
+
+```java
+public class Person {
+    private String name;
+    private int age;
+
+    public String getName() { return this.name; }
+    public void setName(String name) { this.name = name; }
+
+    public int getAge() { return this.age; }
+    public void setAge(int age) { this.age = age; }
+}
+```
+
+如果读写方法符合以下这种命名规范：
+
+```java
+// 读方法:
+public Type getXyz()
+// 写方法:
+public void setXyz(Type value)
+```
+
+那么这种 `class` 被称为 `JavaBean`：
+
+我们通常把一组对应的读方法（`getter`）和写方法（`setter`）称为属性（`property`）。例如，`name` 属性：
+
+- 对应的读方法是 `String getName()`
+- 对应的写方法是 `setName(String)`
+
+JavaBean 主要用来传递数据，即把一组数据组合成一个 JavaBean 便于传输。此外，JavaBean 可以方便地被 IDE 工具分析，生成读写属性的代码，主要用在图形界面的可视化设计中。
+
+要枚举一个 JavaBean 的所有属性，可以直接使用 Java 核心库提供的 `Introspector`：
+
+```java
+import java.beans.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        BeanInfo info = Introspector.getBeanInfo(Person.class);
+        for (PropertyDescriptor pd : info.getPropertyDescriptors()) {
+            System.out.println(pd.getName());
+            System.out.println("  " + pd.getReadMethod());
+            System.out.println("  " + pd.getWriteMethod());
+        }
+    }
+}
+```
+
+- JavaBean 是一种符合命名规范的 `class`，它通过 `getter` 和 `setter` 来定义属性；
+- 属性是一种通用的叫法，并非 Java 语法规定；
+- 可以利用 IDE 快速生成 `getter` 和 `setter`；
+- 使用 `Introspector.getBeanInfo()` 可以获取属性列表。
+
+### 枚举类
+
+为了让编译器能自动检查某个值在枚举的集合内，并且，不同用途的枚举需要不同的类型来标记，不能混用，我们可以使用 `enum` 来定义枚举类
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        Weekday day = Weekday.SUN;
+        if (day == Weekday.SAT || day == Weekday.SUN) {
+            System.out.println("Work at home!");
+        } else {
+            System.out.println("Work at office!");
+        }
+    }
+}
+
+enum Weekday {
+    SUN, MON, TUE, WED, THU, FRI, SAT;
+}
+```
+
+注意到定义枚举类是通过关键字 `enum` 实现的，我们只需依次列出枚举的常量名。
+
+和 `int` 定义的常量相比，使用 `enum` 定义枚举有如下好处：
+
+首先，`enum` 常量本身带有类型信息，即 `Weekday.SUN` 类型是 `Weekday`，编译器会自动检查出类型错误。例如，下面的语句不可能编译通过：
+
+```java
+int day = 1;
+if (day == Weekday.SUN) { // Compile error: bad operand types for binary operator '=='
+}
+```
+
+其次，不可能引用到非枚举的值，因为无法通过编译。
+
+最后，不同类型的枚举不能互相比较或者赋值，因为类型不符。例如，不能给一个 `Weekday` 枚举类型的变量赋值为 `Color` 枚举类型的值：
+
+```java
+Weekday x = Weekday.SUN; // ok!
+Weekday y = Color.RED; // Compile error: incompatible types
+```
+
+这就使得编译器可以在编译期自动检查出所有可能的潜在错误。
+
+使用 `enum` 定义的枚举类是一种引用类型。前面我们讲到，引用类型比较，要使用 `equals()` 方法，如果使用 `==` 比较，它比较的是两个引用类型的变量是否是同一个对象。因此，引用类型比较，要始终使用 `equals()` 方法，但 `enum` 类型可以例外。
+
+这是因为 `enum` 类型的每个常量在 JVM 中只有一个唯一实例，所以可以直接用 `==` 比较
+
+因为 `enum` 是一个 `class`，每个枚举的值都是 `class` 实例，因此，这些实例有一些方法：
+
+#### name()
+
+返回常量名，例如：
+
+```java
+String s = Weekday.SUN.name(); // "SUN"
+```
+
+#### ordinal()
+
+返回定义的常量的顺序，从0开始计数，例如：
+
+```java
+int n = Weekday.MON.ordinal(); // 1
+```
+
+改变枚举常量定义的顺序就会导致 `ordinal()` 返回值发生变化。
+
+要编写健壮的代码，就不要依靠 `ordinal()` 的返回值。因为 `enum` 本身是 `class`，所以我们可以定义 `private` 的构造方法，并且，给每个枚举常量添加字段：
+
+```java
+// enum
+public class Main {
+    public static void main(String[] args) {
+        Weekday day = Weekday.SUN;
+        if (day.dayValue == 6 || day.dayValue == 0) {
+            System.out.println("Work at home!");
+        } else {
+            System.out.println("Work at office!");
+        }
+    }
+}
+
+enum Weekday {
+    MON(1), TUE(2), WED(3), THU(4), FRI(5), SAT(6), SUN(0);
+
+    public final int dayValue;
+
+    private Weekday(int dayValue) {
+        this.dayValue = dayValue;
+    }
+}
+```
+
+这样就无需担心顺序的变化，新增枚举常量时，也需要指定一个 `int` 值。
+
+#### 覆写 toString()
+
+默认情况下，对枚举常量调用 `toString()` 会返回和 `name()` 一样的字符串。但是，`toString()` 可以被覆写，而 `name()` 则不行。我们可以给 `Weekday` 添加 `toString()` 方法
+
+```java
+enum Weekday {
+    MON(1, "星期一"), TUE(2, "星期二"), WED(3, "星期三"), THU(4, "星期四"), FRI(5, "星期五"), SAT(6, "星期六"), SUN(0, "星期日");
+
+    public final int dayValue;
+    private final String chinese;
+
+    private Weekday(int dayValue, String chinese) {
+        this.dayValue = dayValue;
+        this.chinese = chinese;
+    }
+
+    @Override
+    public String toString() {
+        return this.chinese;
+    }
+}
+```
+
+#### 枚举用于 switch
+
+最后，枚举类可以应用在 `switch` 语句中。因为枚举类天生具有类型信息和有限个枚举常量，所以比 `int`、`String` 类型更适合用在 `switch` 语句中：
+
+```java
+// switch
+public class Main {
+    public static void main(String[] args) {
+        Weekday day = Weekday.SUN;
+        switch(day) {
+        case MON:
+        case TUE:
+        case WED:
+        case THU:
+        case FRI:
+            System.out.println("Today is " + day + ". Work at office!");
+            break;
+        case SAT:
+        case SUN:
+            System.out.println("Today is " + day + ". Work at home!");
+            break;
+        default:
+            throw new RuntimeException("cannot process " + day);
+        }
+    }
+}
+
+enum Weekday {
+    MON, TUE, WED, THU, FRI, SAT, SUN;
+}
+```
+
+### 记录类
+
+使用 `String`、`Integer` 等类型的时候，这些类型都是不变类，一个不变类具有以下特点：
+
+1. 定义 class 时使用 `final`，无法派生子类；
+2. 每个字段使用 `final`，保证创建实例后无法修改任何字段。
+
+从 Java 14 开始，引入了新的 `Record` 类。我们定义 `Record` 类时，使用关键字 `record`
+
+编译器默认按照 `record` 声明的变量顺序自动创建一个构造方法，并在方法内给字段赋值。那么问题来了，如果我们要检查参数，应该怎么办？
+
+假设 `Point` 类的 `x`、`y` 不允许负数，我们就得给 `Point` 的构造方法加上检查逻辑：
+
+```java
+public record Point(int x, int y) {
+    public Point {
+        if (x < 0 || y < 0) {
+            throw new IllegalArgumentException();
+        }
+    }
+}
+```
+
+从 Java 14 开始，提供新的 `record` 关键字，可以非常方便地定义 Data Class：
+
+- 使用 `record` 定义的是不变类；
+- 可以编写 Compact Constructor 对参数进行验证；
+- 可以定义静态方法。
+
+### BigInteger
+
+- `BigInteger` 用于表示任意大小的整数；
+- `BigInteger` 是不变类，并且继承自 `Number`；
+- 将 `BigInteger` 转换成基本类型时可使用 `longValueExact()` 等方法保证结果准确。
+
+### BigDecimal
+
+- `BigDecimal` 用于表示精确的小数，常用于财务计算；
+- 比较 `BigDecimal` 的值是否相等，必须使用 `compareTo()` 而不能使用 `equals()`。
+
+## 3.3 常用工具类
+
+### Math
+
+顾名思义，`Math` 类就是用来进行数学计算的，它提供了大量的静态方法来便于我们实现数学计算
+
+求绝对值：
+
+```java
+Math.abs(-100); // 100
+Math.abs(-7.8); // 7.8
+```
+
+取最大或最小值：
+
+```java
+Math.max(100, 99); // 100
+Math.min(1.2, 2.3); // 1.2
+```
+
+计算 x 的 y 次方：
+
+```java
+Math.pow(2, 10); // 2的10次方=1024
+```
+
+计算平方根：
+
+```java
+Math.sqrt(2); // 1.414...
+```
+
+计算 e 的 x 次方：
+
+```java
+Math.exp(2); // 7.389...
+```
+
+计算以 e 为底的对数：
+
+```java
+Math.log(4); // 1.386...
+```
+
+计算以10为底的对数：
+
+```java
+Math.log10(100); // 2
+```
+
+三角函数：
+
+```java
+Math.sin(3.14); // 0.00159...
+Math.cos(3.14); // -0.9999...
+Math.tan(3.14); // -0.0015...
+Math.asin(1.0); // 1.57079...
+Math.acos(1.0); // 0.0
+```
+
+Math 还提供了几个数学常量：
+
+```java
+double pi = Math.PI; // 3.14159...
+double e = Math.E; // 2.7182818...
+Math.sin(Math.PI / 6); // sin(π/6) = 0.5
+```
+
+生成一个随机数 x，x 的范围是 `0 <= x < 1`：
+
+```java
+Math.random(); // 0.53907... 每次都不一样
+```
+
+### HexFormat
+
+在处理 `byte[]` 数组时，我们经常需要与十六进制字符串转换，自己写起来比较麻烦，用 Java 标准库提供的 `HexFormat` 则可以方便地帮我们转换。
+
+要将 `byte[]` 数组转换为十六进制字符串，可以用 `formatHex()` 方法
+
+```java
+import java.util.HexFormat;
+
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        byte[] data = "Hello".getBytes();
+        HexFormat hf = HexFormat.of();
+        String hexData = hf.formatHex(data); // 48656c6c6f
+    }
+}
+```
+
+### Random
+
+`Random` 用来创建伪随机数。所谓伪随机数，是指只要给定一个初始的种子，产生的随机数序列是完全一样的。
+
+要生成一个随机数，可以使用 `nextInt()`、`nextLong()`、`nextFloat()`、`nextDouble()`：
+
+```java
+Random r = new Random();
+r.nextInt(); // 2071575453,每次都不一样
+r.nextInt(10); // 5,生成一个[0,10)之间的int
+r.nextLong(); // 8811649292570369305,每次都不一样
+r.nextFloat(); // 0.54335...生成一个[0,1)之间的float
+r.nextDouble(); // 0.3716...生成一个[0,1)之间的double
+```
+
+有童鞋问，每次运行程序，生成的随机数都是不同的，没看出*伪随机数*的特性来。
+
+这是因为我们创建 `Random` 实例时，如果不给定种子，就使用系统当前时间戳作为种子，因此每次运行时，种子不同，得到的伪随机数序列就不同。
+
+如果我们在创建 `Random` 实例时指定一个种子，就会得到完全确定的随机数序列：
+
+```java
+import java.util.Random;
+
+public class Main {
+    public static void main(String[] args) {
+        Random r = new Random(12345);
+        for (int i = 0; i < 10; i++) {
+            System.out.println(r.nextInt(100));
+        }
+        // 51, 80, 41, 28, 55...
+    }
+}
+```
+
+前面我们使用的 `Math.random()` 实际上内部调用了 `Random` 类，所以它也是伪随机数，只是我们无法指定种子。
+
+### SecureRandom
+
+`SecureRandom` 的安全性是通过操作系统提供的安全的随机种子来生成随机数。这个种子是通过 CPU 的热噪声、读写磁盘的字节、网络流量等各种随机事件产生的“熵”。
+
+在密码学中，安全的随机数非常重要。如果使用不安全的伪随机数，所有加密体系都将被攻破。因此，时刻牢记必须使用 `SecureRandom` 来产生安全的随机数。
+
+> **注意**
+>
+> 需要使用安全随机数的时候，必须使用 `SecureRandom`，绝不能使用 `Random`！
+
+## 4. 异常处理
+
+程序运行的时候，经常会发生各种错误。
+
+本章我们讨论如何在 Java 程序中处理各种异常情况。
+
+有一些错误是用户造成的，比如，希望用户输入一个 `int` 类型的年龄，但是用户的输入是 `abc`
+
+程序想要读写某个文件的内容，但是用户已经把它删除了
+
+所以，一个健壮的程序必须处理各种各样的错误。
+
+所谓错误，就是程序调用某个函数的时候，如果失败了，就表示出错。
+
+调用方如何获知调用失败的信息？有两种方法：
+
+### 方法一：约定返回错误码
+
+例如，处理一个文件，如果返回 `0`，表示成功，返回其他整数，表示约定的错误码：
+
+```java
+int code = processFile("C:\\test.txt");
+if (code == 0) {
+    // ok:
+} else {
+    // error:
+    switch (code) {
+    case 1:
+        // file not found:
+    case 2:
+        // no read permission:
+    default:
+        // unknown error:
+    }
+}
+```
+
+因为使用 `int` 类型的错误码，想要处理就非常麻烦。这种方式常见于底层 C 函数。
+
+### 方法二：在语言层面上提供一个异常处理机制
+
+Java 内置了一套异常处理机制，总是使用异常来表示错误。
+
+异常是一种 `class`，因此它本身带有类型信息。异常可以在任何地方抛出，但只需要在上层捕获，这样就和方法调用分离了：
+
+```java
+try {
+    String s = processFile("C:\\test.txt");
+    // ok:
+} catch (FileNotFoundException e) {
+    // file not found:
+} catch (SecurityException e) {
+    // no read permission:
+} catch (IOException e) {
+    // io error:
+} catch (Exception e) {
+    // other error:
+}
+```
+
+### 异常继承体系
+
+因为 Java 的异常是 `class`，它的继承关系如下：
+
+```text
+                     ┌───────────┐
+                     │  Object   │
+                     └───────────┘
+                           ▲
+                           │
+                     ┌───────────┐
+                     │ Throwable │
+                     └───────────┘
+                           ▲
+                 ┌─────────┴─────────┐
+                 │                   │
+           ┌───────────┐       ┌───────────┐
+           │   Error   │       │ Exception │
+           └───────────┘       └───────────┘
+                 ▲                   ▲
+         ┌───────┘              ┌────┴──────────┐
+         │                      │               │
+┌─────────────────┐    ┌─────────────────┐┌───────────┐
+│OutOfMemoryError │... │RuntimeException ││IOException│...
+└─────────────────┘    └─────────────────┘└───────────┘
+                               ▲
+                   ┌───────────┴─────────────┐
+                   │                         │
+        ┌─────────────────────┐ ┌─────────────────────────┐
+        │NullPointerException │ │IllegalArgumentException │...
+        └─────────────────────┘ └─────────────────────────┘
+
+```
+
+从继承关系可知：`Throwable` 是异常体系的根，它继承自 `Object`。`Throwable` 有两个体系：`Error` 和 `Exception`，`Error` 表示严重的错误，程序对此一般无能为力
+
+而 `Exception` 则是运行时的错误，它可以被捕获并处理。
+
+`Exception` 又分为两大类：
+
+1. `RuntimeException` 以及它的子类；
+2. 非 `RuntimeException`（包括 `IOException`、`ReflectiveOperationException` 等等）
+
+### Checked 与 Unchecked
+
+Java 规定：
+
+- 必须捕获的异常，包括 `Exception` 及其子类，但不包括 `RuntimeException` 及其子类，这种类型的异常称为 Checked Exception。
+- 不需要捕获的异常，包括 `Error` 及其子类，`RuntimeException` 及其子类。
+
+### 捕获异常 try-catch
+
+捕获异常使用 `try...catch` 语句，把可能发生异常的代码放到 `try {...}` 中，然后使用 `catch` 捕获对应的 `Exception` 及其子类：
+
+```java
+// try...catch
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+
+public class Main {
+    public static void main(String[] args) {
+        byte[] bs = toGBK("中文");
+        System.out.println(Arrays.toString(bs));
+    }
+
+    static byte[] toGBK(String s) {
+        try {
+            // 用指定编码转换String为byte[]:
+            return s.getBytes("GBK");
+        } catch (UnsupportedEncodingException e) {
+            // 如果系统不支持GBK编码，会捕获到UnsupportedEncodingException:
+            System.out.println(e); // 打印异常信息
+            return s.getBytes(); // 尝试使用默认编码
+        }
+    }
+}
+```
+
+如果我们不捕获 `UnsupportedEncodingException`，会出现编译失败的问题：
+
+```java
+// try...catch
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+
+public class Main {
+    public static void main(String[] args) {
+        byte[] bs = toGBK("中文");
+        System.out.println(Arrays.toString(bs));
+    }
+
+    static byte[] toGBK(String s) {
+        return s.getBytes("GBK");
+    }
+}
+```
+
+- Java 使用异常来表示错误，并通过 `try ... catch` 捕获异常；
+- Java 的异常是 `class`，并且从 `Throwable` 继承；
+- `Error` 是无需捕获的严重错误，`Exception` 是应该捕获的可处理的错误；
+- `RuntimeException` 无需强制捕获，非 `RuntimeException`（Checked Exception）需强制捕获，或者用 `throws` 声明；
+- 不推荐捕获了异常但不进行任何处理。
+
+### 多个 catch 的顺序
+
+在多个 `catch` 的时候，`catch` 的顺序非常重要：子类必须写在前面。例如：
+
+```java
+public static void main(String[] args) {
+    try {
+        process1();
+        process2();
+        process3();
+    } catch (IOException e) {
+        System.out.println("IO error");
+    } catch (UnsupportedEncodingException e) { // 永远捕获不到
+        System.out.println("Bad encoding");
+    }
+}
+```
+
+对于上面的代码，`UnsupportedEncodingException` 异常是永远捕获不到的，因为它是 `IOException` 的子类。当抛出 `UnsupportedEncodingException` 异常时，会被 `catch (IOException e) { ... }` 捕获并执行。
+
+因此，正确的写法是把子类放到前面：
+
+```java
+public static void main(String[] args) {
+    try {
+        process1();
+        process2();
+        process3();
+    } catch (UnsupportedEncodingException e) {
+        System.out.println("Bad encoding");
+    } catch (IOException e) {
+        System.out.println("IO error");
+    }
+}
+```
+
+### finally 语句
+
+无论是否有异常发生，如果我们都希望执行一些语句，例如清理工作，怎么写？
+
+Java 的 `try ... catch` 机制还提供了 `finally` 语句，`finally` 语句块保证有无错误都会执行。
+
+```java
+public static void main(String[] args) {
+    try {
+        process1();
+        process2();
+        process3();
+    } catch (UnsupportedEncodingException e) {
+        System.out.println("Bad encoding");
+    } catch (IOException e) {
+        System.out.println("IO error");
+    } finally {
+        System.out.println("END");
+    }
+}
+```
+
+注意 `finally` 有几个特点：
+
+1. `finally` 语句不是必须的，可写可不写；
+2. `finally` 总是最后执行。
+
+如果没有发生异常，就正常执行 `try { ... }` 语句块，然后执行 `finally`。如果发生了异常，就中断执行 `try { ... }` 语句块，然后跳转执行匹配的 `catch` 语句块，最后执行 `finally`。
+
+可见，`finally` 是用来保证一些代码必须执行的。
+
+某些情况下，可以没有 `catch`，只使用 `try ... finally` 结构。例如：
+
+```java
+void process(String file) throws IOException {
+    try {
+        ...
+    } finally {
+        System.out.println("END");
+    }
+}
+```
+
+- 捕获异常时，多个 `catch` 语句的匹配顺序非常重要，子类必须放在前面；
+- `finally` 语句保证了有无异常都会执行，它是可选的；
+- 一个 `catch` 语句也可以匹配多个非继承关系的异常，可以把它两用 `|` 合并到一起。
+
+#### 练习：捕获异常
+
+```java
+public static void main(String[] args) {  
+    try {  
+       String a = "12";  
+       String b = "x9";  
+       int c = stringToInt(a);  
+       int d = stringToInt(b);  
+       System.out.println(c * d);  
+    }catch (Exception e){  
+       System.out.println(e);  
+    }  
+}  
+  
+static int stringToInt(String s) {  
+    return Integer.parseInt(s);  
+}
+```
+
+### 异常的传播（调用栈）
+
+当某个方法抛出了异常时，如果当前方法没有捕获异常，异常就会被抛到上层调用方法，直到遇到某个 `try ... catch` 被捕获为止
+
+通过 `printStackTrace()` 可以打印出方法的调用栈，类似
+
+```java
+java.lang.NumberFormatException: null
+    at java.base/java.lang.Integer.parseInt(Integer.java:614)
+    at java.base/java.lang.Integer.parseInt(Integer.java:770)
+    at Main.process2(Main.java:16)
+    at Main.process1(Main.java:12)
+    at Main.main(Main.java:5)
+```
+
+### 抛出异常 throw
+
+当发生错误时，例如，用户输入了非法的字符，我们就可以抛出异常。
+
+参考 `Integer.parseInt()` 方法，抛出异常分两步：
+
+1. 创建某个 `Exception` 的实例；
+2. 用 `throw` 语句抛出。
+
+实际上，绝大部分抛出异常的代码都会合并写成一行：
+
+```java
+void process2(String s) {
+    if (s==null) {
+        throw new NullPointerException();
+    }
+}
+```
+
+### 异常转换与 cause
+
+如果一个方法捕获了某个异常后，又在 `catch` 子句中抛出新的异常，就相当于把抛出的异常类型“转换”了：
+
+```java
+void process1(String s) {
+    try {
+        process2();
+    } catch (NullPointerException e) {
+        throw new IllegalArgumentException();
+    }
+}
+
+void process2(String s) {
+    if (s==null) {
+        throw new NullPointerException();
+    }
+}
+```
+
+当 `process2()` 抛出 `NullPointerException` 后，被 `process1()` 捕获，然后抛出 `IllegalArgumentException()`。
+
+如果在 `main()` 中捕获 `IllegalArgumentException`，我们看看打印的异常栈：
+
+```java
+// exception
+public class Main {
+    public static void main(String[] args) {
+        try {
+            process1();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    static void process1() {
+        try {
+            process2();
+        } catch (NullPointerException e) {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    static void process2() {
+        throw new NullPointerException();
+    }
+}
+```
+
+打印出的异常栈类似：
+
+```plain
+java.lang.IllegalArgumentException
+    at Main.process1(Main.java:15)
+    at Main.main(Main.java:5)
+```
+
+这说明新的异常丢失了原始异常信息，我们已经看不到原始异常 `NullPointerException` 的信息了。
+
+为了能追踪到完整的异常栈，在构造异常的时候，把原始的 `Exception` 实例传进去，新的 `Exception` 就可以持有原始 `Exception` 信息。
+
+在代码中获取原始异常可以使用 `Throwable.getCause()` 方法。如果返回 `null`，说明已经是“根异常”了。
+
+有了完整的异常栈的信息，我们才能快速定位并修复代码的问题。
+
+**最佳实践**
+
+捕获到异常并再次抛出时，一定要留住原始异常，否则很难定位第一案发现场！
+
+在 `catch` 中抛出异常，不会影响 `finally` 的执行。JVM 会先执行 `finally`，然后抛出异常
+
+### 异常屏蔽（Suppressed Exception）
+
+如果在执行 `finally` 语句时抛出异常，那么，`catch` 语句的异常还能否继续抛出？例如：
+
+```java
+// exception
+public class Main {
+    public static void main(String[] args) {
+        try {
+            Integer.parseInt("abc");
+        } catch (Exception e) {
+            System.out.println("catched");
+            throw new RuntimeException(e);
+        } finally {
+            System.out.println("finally");
+            throw new IllegalArgumentException();
+        }
+    }
+}
+```
+
+执行上述代码，发现异常信息如下：
+
+```plain
+catched
+finally
+Exception in thread "main" java.lang.IllegalArgumentException
+    at Main.main(Main.java:11)
+```
+
+这说明 `finally` 抛出异常后，原来在 `catch` 中准备抛出的异常就“消失”了，因为只能抛出一个异常。没有被抛出的异常称为“被屏蔽”的异常（Suppressed Exception）。
+
+在极少数的情况下，我们需要获知所有的异常。如何保存所有的异常信息？方法是先用 `origin` 变量保存原始异常，然后调用 `Throwable.addSuppressed()`，把原始异常添加进来，最后在 `finally` 抛出：
+
+```java
+// exception
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Exception origin = null;
+        try {
+            System.out.println(Integer.parseInt("abc"));
+        } catch (Exception e) {
+            origin = e;
+            throw e;
+        } finally {
+            Exception e = new IllegalArgumentException();
+            if (origin != null) {
+                e.addSuppressed(origin);
+            }
+            throw e;
+        }
+    }
+}
+```
+
+当 `catch` 和 `finally` 都抛出了异常时，虽然 `catch` 的异常被屏蔽了，但是，`finally` 抛出的异常仍然包含了它
+
+绝大多数情况下，在 `finally` 中不要抛出异常。因此，我们通常不需要关心 `Suppressed Exception`
+
+异常打印的详细的栈信息是找出问题的关键，许多初学者在提问时只贴代码，不贴异常，相当于只报案不给线索，福尔摩斯也无能为力。
+
+### Java 常用异常
+
+Java 标准库定义的常用异常包括：
+
+```text
+Exception
+├─ RuntimeException
+│  ├─ NullPointerException
+│  ├─ IndexOutOfBoundsException
+│  ├─ SecurityException
+│  └─ IllegalArgumentException
+│     └─ NumberFormatException
+├─ IOException
+│  ├─ UnsupportedCharsetException
+│  ├─ FileNotFoundException
+│  └─ SocketException
+├─ ParseException
+├─ GeneralSecurityException
+├─ SQLException
+└─ TimeoutException
+```
+
+### 自定义异常
+
+在一个大型项目中，可以自定义新的异常类型，但是，保持一个合理的异常继承体系是非常重要的。
+
+一个常见的做法是自定义一个 `BaseException` 作为“根异常”，然后，派生出各种业务类型的异常。
+
+`BaseException` 需要从一个适合的 `Exception` 派生，通常建议从 `RuntimeException` 派生：
+
+```java
+public class BaseException extends RuntimeException {
+}
+```
+
+其他业务类型的异常就可以从 `BaseException` 派生：
+
+```java
+public class UserNotFoundException extends BaseException {
+}
+
+public class LoginFailedException extends BaseException {
+}
+```
+
+自定义的 `BaseException` 应该提供多个构造方法：
+
+```java
+public class BaseException extends RuntimeException {
+    public BaseException() {
+        super();
+    }
+
+    public BaseException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public BaseException(String message) {
+        super(message);
+    }
+
+    public BaseException(Throwable cause) {
+        super(cause);
+    }
+}
+```
+
+上述构造方法实际上都是原样照抄 `RuntimeException`。这样，抛出异常的时候，就可以选择合适的构造方法。通过 IDE 可以根据父类快速生成子类的构造方法。
+
+### NullPointerException（NPE）
+
+在所有的 `RuntimeException` 异常中，Java 程序员最熟悉的恐怕就是 `NullPointerException` 了。
+
+`NullPointerException` 即空指针异常，俗称 NPE。如果一个对象为 `null`，调用其方法或访问其字段就会产生 `NullPointerException`，这个异常通常是由 JVM 抛出的，例如：
+
+```java
+// NullPointerException
+public class Main {
+    public static void main(String[] args) {
+        String s = null;
+        System.out.println(s.toLowerCase());
+    }
+}
+```
+
+指针这个概念实际上源自 C 语言，Java 语言中并无指针。我们定义的变量实际上是引用，Null Pointer 更确切地说是 Null Reference，不过两者区别不大。
+
+如果遇到 `NullPointerException`，我们应该如何处理？首先，必须明确，`NullPointerException` 是一种代码逻辑错误，遇到 `NullPointerException`，遵循原则是早暴露，早修复，严禁使用 `catch` 来隐藏这种编码错误
+
+好的编码习惯可以极大地降低 `NullPointerException` 的产生，例如：
+
+- 成员变量在定义时初始化：
+- 返回空字符串 `""`、空数组而不是 `null`
+- 如果调用方一定要根据 `null` 判断，比如返回 `null` 表示文件不存在，那么考虑返回 `Optional<T>`
+
+```java
+public Optional<String> readFromFile(String file) {
+    if (!fileExist(file)) {
+        return Optional.empty();
+    }
+    ...
+}
+```
+
+这样调用方必须通过 `Optional.isPresent()` 判断是否有结果。
+
+#### 定位 NullPointerException
+
+- `NullPointerException` 是 Java 代码常见的逻辑错误，应当早暴露，早修复；
+- 可以启用 Java 14 的增强异常信息来查看 `NullPointerException` 的详细错误信息。
+
+### 断言（Assertion）
+
+断言（Assertion）是一种调试程序的方式。在 Java 中，使用 `assert` 关键字来实现断言。
+
+```java
+public static void main(String[] args) {
+    double x = Math.abs(-123.45);
+    assert x >= 0;
+    System.out.println(x);
+}
+```
+
+语句 `assert x >= 0;` 即为断言，断言条件 `x >= 0` 预期为 `true`。如果计算结果为 `false`，则断言失败，抛出 `AssertionError`。
+
+使用 `assert` 语句时，还可以添加一个可选的断言消息：
+
+```java
+assert x >= 0 : "x must >= 0";
+```
+
+这样，断言失败的时候，`AssertionError` 会带上消息 `x must >= 0`，更加便于调试。
+
+JVM 默认关闭断言指令，即遇到 `assert` 语句就自动忽略了，不执行。
+
+要执行 `assert` 语句，必须给 Java 虚拟机传递 `-enableassertions`（可简写为 `-ea`）参数启用断言。所以，上述程序必须在命令行下运行才有效果：
+
+```plain
+$ java -ea Main.java
+Exception in thread "main" java.lang.AssertionError
+	at Main.main(Main.java:5)
+```
+
+实际开发中，很少使用断言。更好的方法是编写单元测试，后续我们会讲解 `JUnit` 的使用。
+
+### 日志
+
+#### 使用 JDK Logging
+
+输出日志，而不是用 `System.out.println()`，有以下几个好处：
+
+1. 可以设置输出样式，避免自己每次都写 `"ERROR: " + var`；
+2. 可以设置输出级别，禁止某些级别输出。例如，只输出错误日志；
+3. 可以被重定向到文件，这样可以在程序运行结束后查看日志；
+4. 可以按包名控制日志级别，只输出某些包打的日志；
+
+#### Commons Logging
+
+和 Java 标准库提供的日志不同，Commons Logging 是一个第三方日志库，它是由 Apache 创建的日志模块
+
+使用 Commons Logging 只需要和两个类打交道，并且只有两步：
+
+第一步，通过 `LogFactory` 获取 `Log` 类的实例；第二步，使用 `Log` 实例的方法打日志。
+
+- Commons Logging 是使用最广泛的日志模块；
+- Commons Logging 的 API 非常简单；
+- Commons Logging 可以自动检测并使用其他日志模块。
