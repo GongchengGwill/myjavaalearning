@@ -29,6 +29,8 @@ public class Main {
                     bm.add(id, title, author, price);
                 } catch (NumberFormatException e) {
                     System.out.println("id 和 price 必须是数字");
+                } catch (IllegalArgumentException e) {
+                    System.out.println("添加失败：" + e.getMessage());
                 }
             } else if (str.equals("2")) {
                 System.out.println("以下是书库所有图书信息：");
@@ -36,7 +38,11 @@ public class Main {
             } else if (str.equals("3")) {
                 System.out.println("请输入书籍书名");
                 String booktitle = sc.nextLine().trim();
-                bm.searchByTitle(booktitle);
+                try {
+                    bm.searchByTitle(booktitle);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("搜索失败：" + e.getMessage());
+                }
             } else if (str.equals("4")) {
                 System.out.println("请输入想删除的书籍编号id");
                 String bookid = sc.nextLine().trim();
@@ -44,6 +50,8 @@ public class Main {
                     bm.deleteById(Integer.parseInt(bookid));
                 } catch (NumberFormatException e) {
                     System.out.println("id 必须是数字");
+                } catch (BookNotFoundException e) {
+                    System.out.println(e.getMessage());
                 }
             } else if (str.equals("0")) {
                 System.out.println("你选择了退出系统！");
