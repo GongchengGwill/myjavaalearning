@@ -2108,3 +2108,615 @@ Exception in thread "main" java.lang.AssertionError
 - Commons Logging 是使用最广泛的日志模块；
 - Commons Logging 的 API 非常简单；
 - Commons Logging 可以自动检测并使用其他日志模块。
+
+### 日志（补充）
+
+通过 Commons Logging 实现日志，不需要修改代码即可使用 Log4j；
+
+使用 Log4j 只需要把 `log4j2.xml` 和相关 jar 放入 classpath；
+
+如果要更换 Log4j，只需要移除 `log4j2.xml` 和相关 jar；
+
+只有扩展 Log4j 时，才需要引用 Log4j 的接口（例如，将日志加密写入数据库的功能，需要自己开发）。
+
+SLF4J 和 Logback 可以取代 Commons Logging 和 Log4j；
+
+始终使用 SLF4J 的接口写入日志，使用 Logback 只需要配置，不需要修改代码。
+
+## 5. 反射
+
+反射就是 Reflection，Java 的反射是指程序在运行期可以拿到一个对象的所有信息。
+
+正常情况下，如果我们要调用一个对象的方法，或者访问一个对象的字段，通常会传入对象实例：
+
+```java
+// Main.java
+import com.itranswarp.learnjava.Person;
+
+public class Main {
+    String getFullName(Person p) {
+        return p.getFirstName() + " " + p.getLastName();
+    }
+}
+```
+
+但是，如果不能获得 `Person` 类，只有一个 `Object` 实例，比如这样：
+
+```java
+String getFullName(Object obj) {
+    return ???
+}
+```
+
+这时候，为了解决这个问题，我们就需要用到反射。
+
+反射是为了解决在运行期，对某个实例一无所知的情况下，如何调用其方法。
+
+### 5.1 Class
+
+除了 `int` 等基本类型外，Java 的其他类型全部都是 `class`（包括 `interface`）。例如：
+
+- `String`
+- `Object`
+- `Runnable`
+- `Exception`
+
+可以知道：`class`（包括 `interface`）的本质是数据类型（`Type`）。无继承关系的数据类型无法赋值
+
+而 `class` 是由 JVM 在执行过程中动态加载的。JVM 在第一次读取到一种 `class` 类型时，将其加载进内存。
+
+每加载一种 `class`，JVM 就为其创建一个 `Class` 类型的实例，并关联起来。注意：这里的 `Class` 类型是一个名叫 `Class` 的 `class`。它长这样：
+
+```java
+public final class Class {
+    private Class() {}
+}
+```
+
+由于 JVM 为每个加载的 `class` 创建了对应的 `Class` 实例，并在实例中保存了该 `class` 的所有信息，包括类名、包名、父类、实现的接口、所有方法、字段等，因此，如果获取了某个 `Class` 实例，我们就可以通过这个 `Class` 实例获取到该实例对应的 `class` 的所有信息。
+
+这种通过 `Class` 实例获取 `class` 信息的方法称为反射（Reflection）。
+
+如何获取一个 `class` 的 `Class` 实例：
+
+方法一：直接通过一个 `class` 的静态变量 `class` 获取：
+
+```java
+Class cls = String.class;
+```
+
+方法二：如果我们有一个实例变量，可以通过该实例变量提供的 `getClass()` 方法获取：
+
+```java
+String s = "Hello";
+Class cls = s.getClass();
+```
+
+方法三：如果知道一个 `class` 的完整类名，可以通过静态方法 `Class.forName()` 获取：
+
+```java
+Class cls = Class.forName("java.lang.String");
+```
+
+通常情况下，我们应该用 `instanceof` 判断数据类型，因为面向抽象编程的时候，我们不关心具体的子类型。只有在需要精确判断一个类型是不是某个 `class` 的时候，我们才使用 `==` 判断 `class` 实例。
+
+因为反射的目的是为了获得某个实例的信息。因此，当我们拿到某个 `Object` 实例时，我们可以通过反射获取该 `Object` 的 `class` 信息：
+
+```java
+void printObjectInfo(Object obj) {
+    Class cls = obj.getClass();
+}
+```
+
+如果获取到了一个 `Class` 实例，我们就可以通过该 `Class` 实例来创建对应类型的实例：
+
+```java
+// 获取String的Class实例:
+Class cls = String.class;
+// 创建一个String实例:
+String s = (String) cls.newInstance();
+```
+
+上述代码相当于 `new String()`。通过 `Class.newInstance()` 可以创建类实例，它的局限是：只能调用 `public` 的无参数构造方法。带参数的构造方法，或者非 `public` 的构造方法都无法通过 `Class.newInstance()` 被调用。
+
+#### 动态加载
+
+JVM 在执行 Java 程序的时候，并不是一次性把所有用到的 class 全部加载到内存，而是第一次需要用到 class 时才加载。
+
+- JVM 为每个加载的 `class` 及 `interface` 创建了对应的 `Class` 实例来保存 `class` 及 `interface` 的所有信息；
+- 获取一个 `class` 对应的 `Class` 实例后，就可以获取该 `class` 的所有信息；
+- 通过 Class 实例获取 `class` 信息的方法称为反射（Reflection）；
+- JVM 总是动态加载 `class`，可以在运行期根据条件来控制加载 class。
+
+动态加载 `class` 的特性对于 Java 程序非常重要。利用 JVM 动态加载 `class` 的特性，我们才能在运行期根据条件加载不同的实现类。例如，Commons Logging 总是优先使用 Log4j，只有当 Log4j 不存在时，才使用 JDK 的 logging。利用 JVM 动态加载特性，大致的实现代码如下：
+
+```java
+// Commons Logging优先使用Log4j:
+LogFactory factory = null;
+if (isClassPresent("org.apache.logging.log4j.Logger")) {
+    factory = createLog4j();
+} else {
+    factory = createJdkLog();
+}
+
+boolean isClassPresent(String name) {
+    try {
+        Class.forName(name);
+        return true;
+    } catch (Exception e) {
+        return false;
+    }
+}
+```
+
+这就是为什么我们只需要把 Log4j 的 jar 包放到 classpath 中，Commons Logging 就会自动使用 Log4j
+
+### 5.2 访问字段
+
+对任意的一个 `Object` 实例，只要我们获取了它的 `Class`，就可以获取它的一切信息。
+
+`Class` 类提供了以下几个方法来获取字段：
+
+- `Field getField(name)`：根据字段名获取某个 public 的 field（包括父类）
+- `Field getDeclaredField(name)`：根据字段名获取当前类的某个 field（不包括父类）
+- `Field[] getFields()`：获取所有 public 的 field（包括父类）
+- `Field[] getDeclaredFields()`：获取当前类的所有 field（不包括父类）
+
+利用反射拿到字段的一个 `Field` 实例只是第一步，我们还可以拿到一个实例对应的该字段的值
+
+例如，对于一个 `Person` 实例，我们可以先拿到 `name` 字段对应的 `Field`，再获取这个实例的 `name` 字段的值：
+
+```java
+// reflection
+import java.lang.reflect.Field;
+public class Main {
+
+    public static void main(String[] args) throws Exception {
+        Object p = new Person("Xiao Ming");
+        Class c = p.getClass();
+        Field f = c.getDeclaredField("name");
+        Object value = f.get(p);
+        System.out.println(value); // "Xiao Ming"
+    }
+}
+
+class Person {
+    private String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+}
+```
+
+上述代码先获取 `Class` 实例，再获取 `Field` 实例，然后，用 `Field.get(Object)` 获取指定实例的指定字段的值。
+
+运行代码，如果不出意外，会得到一个 `IllegalAccessException`，这是因为 `name` 被定义为一个 `private` 字段，正常情况下，`Main` 类无法访问 `Person` 类的 `private` 字段。要修复错误，可以将 `private` 改为 `public`，或者，在调用 `Object value = f.get(p);` 前，先写一句：
+
+```java
+f.setAccessible(true);
+```
+
+调用 `Field.setAccessible(true)` 的意思是，别管这个字段是不是 `public`，一律允许访问。
+
+反射是一种非常规的用法，使用反射，首先代码非常繁琐，其次，它更多地是给工具或者底层框架来使用，目的是在不知道目标实例任何信息的情况下，获取特定字段的值。
+
+此外，`setAccessible(true)` 可能会失败。如果 JVM 运行期存在 `SecurityManager`，那么它会根据规则进行检查，有可能阻止 `setAccessible(true)`。例如，某个 `SecurityManager` 可能不允许对 `java` 和 `javax` 开头的 `package` 的类调用 `setAccessible(true)`，这样可以保证 JVM 核心库的安全。
+
+#### 设置字段值
+
+设置字段值是通过 `Field.set(Object, Object)` 实现的，其中第一个 `Object` 参数是指定的实例，第二个 `Object` 参数是待修改的值。
+
+```java
+// reflection
+import java.lang.reflect.Field;
+
+public class Main {
+
+    public static void main(String[] args) throws Exception {
+        Person p = new Person("Xiao Ming");
+        System.out.println(p.getName()); // "Xiao Ming"
+        Class c = p.getClass();
+        Field f = c.getDeclaredField("name");
+        f.setAccessible(true);
+        f.set(p, "Xiao Hong");
+        System.out.println(p.getName()); // "Xiao Hong"
+    }
+}
+
+class Person {
+    private String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+}
+```
+
+Java 的反射 API 提供的 `Field` 类封装了字段的所有信息：
+
+- 通过 `Class` 实例的方法可以获取 `Field` 实例：`getField()`，`getFields()`，`getDeclaredField()`，`getDeclaredFields()`；
+- 通过 Field 实例可以获取字段信息：`getName()`，`getType()`，`getModifiers()`；
+- 通过 Field 实例可以读取或设置某个对象的字段，如果存在访问限制，要首先调用 `setAccessible(true)` 来访问非 `public` 字段。
+- 通过反射读写字段是一种非常规方法，它会破坏对象的封装。
+
+#### 练习：通过反射修改字段内容
+
+```java
+public class Main {  
+  
+    public static void main(String[] args) throws NoSuchFieldException, IllegalAccessException {  
+        String name = "Xiao Ming";  
+        int age = 20;  
+        Person p = new Person();  
+        // TODO: 利用反射给name和age字段赋值:  
+        // 1.获取class  
+        Class c = p.getClass();  
+        // 2.获取field  
+        Field f = c.getDeclaredField("name");  
+        Field fa = c.getDeclaredField("age");  
+        // 3.对field使用set进行修改  
+        f.setAccessible(true);  
+        f.set(p, "Nai Long");  
+        fa.setAccessible(true);  
+        fa.set(p, 18);  
+  
+        System.out.println(p.getName()); // "Xiao Ming"  
+        System.out.println(p.getAge()); // 20  
+    }  
+}  
+  
+class Person {  
+    private String name;  
+    private int age;  
+  
+    public String getName() {  
+        return name;  
+    }  
+  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+  
+    public int getAge() {  
+        return age;  
+    }  
+  
+    public void setAge(int age) {  
+        this.age = age;  
+    }  
+  
+}
+```
+
+### 5.3 调用方法
+
+可以通过 `Class` 实例获取所有 `Method` 信息。`Class` 类提供了以下几个方法来获取 `Method`：
+
+- `Method getMethod(name, Class...)`：获取某个 `public` 的 `Method`（包括父类）
+- `Method getDeclaredMethod(name, Class...)`：获取当前类的某个 `Method`（不包括父类）
+- `Method[] getMethods()`：获取所有 `public` 的 `Method`（包括父类）
+- `Method[] getDeclaredMethods()`：获取当前类的所有 `Method`（不包括父类）
+
+一个 `Method` 对象包含一个方法的所有信息：
+
+- `getName()`：返回方法名称，例如：`"getScore"`；
+- `getReturnType()`：返回方法返回值类型，也是一个 Class 实例，例如：`String.class`；
+- `getParameterTypes()`：返回方法的参数类型，是一个 Class 数组，例如：`{String.class, int.class}`；
+- `getModifiers()`：返回方法的修饰符，它是一个 `int`，不同的 bit 表示不同的含义。
+
+当我们获取到一个 `Method` 对象时，就可以对它进行调用。
+
+如果用反射来调用 `substring` 方法，需要以下代码：
+
+```java
+// reflection
+import java.lang.reflect.Method;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        // String对象:
+        String s = "Hello world";
+        // 获取String substring(int)方法，参数为int:
+        Method m = String.class.getMethod("substring", int.class);
+        // 在s对象上调用该方法并获取结果:
+        String r = (String) m.invoke(s, 6);
+        // 打印调用结果:
+        System.out.println(r); // "world"
+    }
+}
+```
+
+注意到 `substring()` 有两个重载方法，我们获取的是 `String substring(int)` 这个方法。
+
+对 `Method` 实例调用 `invoke` 就相当于调用该方法，`invoke` 的第一个参数是对象实例，即在哪个实例上调用该方法，后面的可变参数要与方法参数一致，否则将报错。
+
+如果获取到的 Method 表示一个静态方法，调用静态方法时，由于无需指定实例对象，所以 `invoke` 方法传入的第一个参数永远为 `null`。
+
+和 Field 类似，对于非 public 方法，我们虽然可以通过 `Class.getDeclaredMethod()` 获取该方法实例，但直接对其调用将得到一个 `IllegalAccessException`。为了调用非 public 方法，我们通过 `Method.setAccessible(true)` 允许其调用
+
+#### 多态
+
+使用反射调用方法时，仍然遵循多态原则：即总是调用实际类型的覆写方法（如果存在）。
+
+```java
+public class Main {  
+    public static void main(String[] args) throws Exception {  
+        // 获取Person的hello方法:  
+        Method h = Person.class.getMethod("hello");  
+        // 对Student实例调用hello方法:  
+        h.invoke(new Student());  
+        h.invoke(new Person());  
+    }  
+}  
+  
+class Person {  
+    public void hello() {  
+        System.out.println("Person:hello");  
+    }  
+}  
+  
+class Student extends Person {  
+    public void hello() {  
+        System.out.println("Student:hello");  
+    }  
+}
+```
+
+#### 练习：利用反射调用方法
+
+```java
+public class Main {  
+  
+    public static void main(String[] args) throws Exception {  
+        String name = "Xiao Ming";  
+        int age = 20;  
+        Person p = new Person();  
+        // TODO: 利用反射调用setName和setAge方法:  
+        // 1.获取class  
+        Class c = Person.class;  
+        // 2.获取method  
+        Method m = c.getDeclaredMethod("setName", String.class);  
+        Method m2 = c.getDeclaredMethod("setAge", int.class);  
+        // 3.进行调用  
+        m.invoke(p, name);  
+        m2.invoke(p, age);  
+        System.out.println(p.getName()); // "Xiao Ming"  
+        System.out.println(p.getAge()); // 20  
+    }  
+}  
+  
+class Person {  
+    private String name;  
+    private int age;  
+  
+    public String getName() {  
+        return name;  
+    }  
+  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+  
+    public int getAge() {  
+        return age;  
+    }  
+  
+    public void setAge(int age) {  
+        this.age = age;  
+    }  
+  
+}
+```
+
+Java 的反射 API 提供的 Method 对象封装了方法的所有信息：
+
+- 通过 `Class` 实例的方法可以获取 `Method` 实例：`getMethod()`，`getMethods()`，`getDeclaredMethod()`，`getDeclaredMethods()`；
+- 通过 `Method` 实例可以获取方法信息：`getName()`，`getReturnType()`，`getParameterTypes()`，`getModifiers()`；
+- 通过 `Method` 实例可以调用某个对象的方法：`Object invoke(Object instance, Object... parameters)`；
+- 通过设置 `setAccessible(true)` 来访问非 `public` 方法；
+- 通过反射调用方法时，仍然遵循多态原则。
+
+### 调用构造方法
+
+我们通常使用 `new` 操作符创建新的实例：
+
+```java
+Person p = new Person();
+```
+
+如果通过反射来创建新的实例，可以调用 Class 提供的 newInstance() 方法：
+
+```java
+Person p = Person.class.newInstance();
+```
+
+## 6. 泛型
+
+泛型是一种“代码模板”，可以用一套代码套用各种类型。
+
+为了解决新的问题，我们必须把 `ArrayList` 变成一种模板：`ArrayList<T>`，代码如下：
+
+```java
+public class ArrayList<T> {
+    private T[] array;
+    private int size;
+    public void add(T e) {...}
+    public void remove(int index) {...}
+    public T get(int index) {...}
+}
+```
+
+`T` 可以是任何 class。这样一来，我们就实现了：编写一次模版，可以创建任意类型的 `ArrayList`：
+
+```java
+// 创建可以存储String的ArrayList:
+ArrayList<String> strList = new ArrayList<String>();
+// 创建可以存储Float的ArrayList:
+ArrayList<Float> floatList = new ArrayList<Float>();
+// 创建可以存储Person的ArrayList:
+ArrayList<Person> personList = new ArrayList<Person>();
+```
+
+这样一来，既实现了编写一次，万能匹配，又通过编译器保证了类型安全：这就是泛型。
+
+### 向上转型规则
+
+在 Java 标准库中的 `ArrayList<T>` 实现了 `List<T>` 接口，它可以向上转型为 `List<T>`：
+
+```java
+public class ArrayList<T> implements List<T> {
+    ...
+}
+
+List<String> list = new ArrayList<String>();
+```
+
+即类型 `ArrayList<T>` 可以向上转型为 `List<T>`。
+
+要特别注意：不能把 `ArrayList<Integer>` 向上转型为 `ArrayList<Number>` 或 `List<Number>`。
+
+编译器为了避免错误，不允许把 `ArrayList<Integer>` 转型为 `ArrayList<Number>`
+
+> **特别注意**
+>
+> `ArrayList<Integer>` 和 `ArrayList<Number>` 两者完全没有继承关系。
+
+- 泛型就是编写模板代码来适应任意类型；
+- 泛型的好处是使用时不必对类型进行强制转换，它通过编译器对类型进行检查；
+- 注意泛型的继承关系：可以把 `ArrayList<Integer>` 向上转型为 `List<Integer>`（`T` 不能变！），但不能把 `ArrayList<Integer>` 向上转型为 `ArrayList<Number>`（`T` 不能变成父类）。
+
+使用 `ArrayList` 时，如果不定义泛型类型时，泛型类型实际上就是 `Object`
+
+当我们定义泛型类型 `<String>` 后，`List<T>` 的泛型接口变为强类型 `List<String>`：
+
+```java
+// 无编译器警告:
+List<String> list = new ArrayList<String>();
+list.add("Hello");
+list.add("World");
+// 无强制转型:
+String first = list.get(0);
+String second = list.get(1);
+```
+
+编译器如果能自动推断出泛型类型，就可以省略后面的泛型类型。例如，对于下面的代码：
+
+```java
+List<Number> list = new ArrayList<Number>();
+```
+
+### 泛型接口
+
+除了 `ArrayList<T>` 使用了泛型，还可以在接口中使用泛型。例如，`Arrays.sort(Object[])` 可以对任意数组进行排序，但待排序的元素必须实现 `Comparable<T>` 这个泛型接口：
+
+```java
+public interface Comparable<T> {
+    /**
+     * 返回负数: 当前实例比参数o小
+     * 返回0: 当前实例与参数o相等
+     * 返回正数: 当前实例比参数o大
+     */
+    int compareTo(T o);
+}
+```
+
+按照以下步骤来编写一个泛型类。
+
+首先，按照某种类型，例如：`String`，来编写类：
+
+然后，标记所有的特定类型，这里是 `String`，把特定类型 `String` 替换为 `T`，并申明 `<T>`：
+
+编写泛型类时，要特别注意，泛型类型 `<T>` 不能用于静态方法。
+
+对于静态方法，我们可以单独改写为“泛型”方法，只需要使用另一个类型即可。
+
+### 多类型参数
+
+泛型还可以定义多种类型。例如，我们希望 `Pair` 不总是存储两个类型一样的对象，就可以使用类型 `<T, K>`：
+
+```java
+public class Pair<T, K> {
+    private T first;
+    private K last;
+    public Pair(T first, K last) {
+        this.first = first;
+        this.last = last;
+    }
+    public T getFirst() { ... }
+    public K getLast() { ... }
+}
+```
+
+使用的时候，需要指出两种类型：
+
+```java
+Pair<String, Integer> p = new Pair<>("test", 123);
+```
+
+### 擦拭法（Type Erasure）
+
+泛型是一种类似“模板代码”的技术，不同语言的泛型实现方式不一定相同。
+
+Java 语言的泛型实现方式是擦拭法（Type Erasure）。
+
+所谓擦拭法是指，虚拟机对泛型其实一无所知，所有的工作都是编译器做的。
+
+Java 的泛型是由编译器在编译时实行的，编译器内部永远把所有类型 `T` 视为 `Object` 处理，但是，在需要转型的时候，编译器会根据 `T` 的类型自动为我们实行安全地强制转型。
+
+#### 泛型的局限
+
+Java 泛型的局限：
+
+局限一：`<T>` 不能是基本类型，例如 `int`，因为实际类型是 `Object`，`Object` 类型无法持有基本类型
+
+局限二：无法取得带泛型的 `Class`。
+
+局限三：无法判断带泛型的类型：
+
+局限四：不能实例化 `T` 类型：这样一来，创建 `new Pair<String>()` 和创建 `new Pair<Integer>()` 就全部成了 `Object`，显然编译器要阻止这种类型不对的代码。
+
+要实例化 `T` 类型，我们必须借助额外的 `Class<T>` 参数：
+
+```java
+public class Pair<T> {
+    private T first;
+    private T last;
+    public Pair(Class<T> clazz) {
+        first = clazz.newInstance();
+        last = clazz.newInstance();
+    }
+}
+```
+
+上述代码借助 `Class<T>` 参数并通过反射来实例化 `T` 类型，使用的时候，也必须传入 `Class<T>`
+
+```java
+Pair<String> pair = new Pair<>(String.class);
+```
+
+### 泛型继承
+
+一个类可以继承自一个泛型类。
+
+例如：父类的类型是 `Pair<Integer>`，子类的类型是 `IntPair`，可以这么继承：
+
+```java
+public class IntPair extends Pair<Integer> {
+}
+```
+
+### 小结
+
+- Java 的泛型是采用擦拭法实现的；
+- 擦拭法决定了泛型 `<T>`：
+  - 不能是基本类型，例如：`int`；
+  - 不能获取带泛型类型的 `Class`，例如：`Pair<String>.class`；
+  - 不能判断带泛型类型的类型，例如：`x instanceof Pair<String>`；
+  - 不能实例化 `T` 类型，例如：`new T()`。
+- 泛型方法要防止重复定义方法，例如：`public boolean equals(T obj)`；
+- 子类可以获取父类的泛型类型 `<T>`。
