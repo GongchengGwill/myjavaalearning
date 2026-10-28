@@ -2529,13 +2529,426 @@ Java 的反射 API 提供的 Method 对象封装了方法的所有信息：
 Person p = new Person();
 ```
 
-如果通过反射来创建新的实例，可以调用 Class 提供的 newInstance() 方法：
+如果通过反射来创建新的实例，可以调用 Class 提供的 newInstance() 方法，它只能调用该类的 public 无参数构造方法。如果构造方法带有参数，或者不是 public，就无法直接通过 `Class.newInstance()` 来调用：
 
 ```java
 Person p = Person.class.newInstance();
 ```
 
-## 6. 泛型
+`Constructor` 对象，它包含一个构造方法的所有信息，可以创建一个实例。`Constructor` 对象和 Method 非常类似，不同之处仅在于它是一个构造方法，并且，调用结果总是返回实例
+
+```java
+import java.lang.reflect.Constructor;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        // 获取构造方法Integer(int):
+        Constructor cons1 = Integer.class.getConstructor(int.class);
+        // 调用构造方法:
+        Integer n1 = (Integer) cons1.newInstance(123);
+        System.out.println(n1);
+
+        // 获取构造方法Integer(String)
+        Constructor cons2 = Integer.class.getConstructor(String.class);
+        Integer n2 = (Integer) cons2.newInstance("456");
+        System.out.println(n2);
+    }
+}
+```
+
+通过 Class 实例获取 Constructor 的方法如下：
+
+- `getConstructor(Class...)`：获取某个 `public` 的 `Constructor`；
+- `getDeclaredConstructor(Class...)`：获取某个 `Constructor`；
+- `getConstructors()`：获取所有 `public` 的 `Constructor`；
+- `getDeclaredConstructors()`：获取所有 `Constructor`。
+
+注意 `Constructor` 总是当前类定义的构造方法，和父类无关，因此不存在多态的问题。
+
+调用非 `public` 的 `Constructor` 时，必须首先通过 `setAccessible(true)` 设置允许访问。`setAccessible(true)` 可能会失败。
+
+### 获取继承关系
+
+有了 `Class` 实例，我们还可以获取它的父类的 `Class`
+
+```java
+// reflection
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Class i = Integer.class;
+        Class n = i.getSuperclass();
+        System.out.println(n);
+        Class o = n.getSuperclass();
+        System.out.println(o);
+        System.out.println(o.getSuperclass());
+    }
+}
+```
+
+由于一个类可能实现一个或多个接口，通过 `Class` 我们就可以查询到实现的接口类型。例如，查询 `Integer` 实现的接口：
+
+```java
+// reflection
+import java.lang.reflect.Method;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Class s = Integer.class;
+        Class[] is = s.getInterfaces();
+        for (Class i : is) {
+            System.out.println(i);
+        }
+    }
+}
+```
+
+运行上述代码可知，`Integer` 实现的接口有：
+
+- `java.lang.Comparable`
+- `java.lang.constant.Constable`
+- `java.lang.constant.ConstantDesc`
+
+要特别注意：`getInterfaces()` 只返回当前类直接实现的接口类型，并不包括其父类实现的接口类型
+
+两个 `Class` 实例，要判断一个向上转型是否成立，可以调用 `isAssignableFrom()`：
+
+```java
+// Integer i = ?
+Integer.class.isAssignableFrom(Integer.class); // true，因为Integer可以赋值给Integer
+// Number n = ?
+Number.class.isAssignableFrom(Integer.class); // true，因为Integer可以赋值给Number
+// Object o = ?
+Object.class.isAssignableFrom(Integer.class); // true，因为Integer可以赋值给Object
+// Integer i = ?
+Integer.class.isAssignableFrom(Number.class); // false，因为Number不能赋值给Integer
+```
+
+### 动态代理
+
+- 可以实例化 `class`（非 `abstract`）；
+- 不能实例化 `interface`
+
+所有 `interface` 类型的变量总是通过某个实例向上转型并赋值给接口类型变量的：
+
+```java
+CharSequence cs = new StringBuilder();
+```
+
+动态代理（Dynamic Proxy）：可以在运行期动态创建某个 `interface` 的实例。
+
+动态代码：先定义接口 `Hello`，但是并不去编写实现类，而是直接通过 JDK 提供的一个 `Proxy.newProxyInstance()` 创建了一个 `Hello` 接口对象。
+
+JDK 提供的动态创建接口对象的方式，就叫动态代理。
+
+一个最简单的动态代理实现如下：
+
+```java
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+public class Main {
+    public static void main(String[] args) {
+        InvocationHandler handler = new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                System.out.println(method);
+                if (method.getName().equals("morning")) {
+                    System.out.println("Good morning, " + args[0]);
+                }
+                return null;
+            }
+        };
+        Hello hello = (Hello) Proxy.newProxyInstance(
+            Hello.class.getClassLoader(), // 传入ClassLoader
+            new Class[] { Hello.class }, // 传入要实现的接口
+            handler); // 传入处理调用方法的InvocationHandler
+        hello.morning("Bob");
+    }
+}
+
+interface Hello {
+    void morning(String name);
+}
+```
+
+在运行期动态创建一个 `interface` 实例的方法如下：
+
+1. 定义一个 `InvocationHandler` 实例，它负责实现接口的方法调用；
+2. 通过 `Proxy.newProxyInstance()` 创建 `interface` 实例，它需要3个参数：
+   1. 使用的 `ClassLoader`，通常就是接口类的 `ClassLoader`；
+   2. 需要实现的接口数组，至少需要传入一个接口进去；
+   3. 用来处理接口方法调用的 `InvocationHandler` 实例。
+3. 将返回的 `Object` 强制转型为接口。
+
+- Java 标准库提供了动态代理功能，允许在运行期动态创建一个接口的实例；
+- 动态代理是通过 `Proxy` 创建代理对象，然后将接口方法“代理”给 `InvocationHandler` 完成的。
+
+## 6. 注解
+
+注解是放在 Java 源码的类、方法、字段、参数前的一种特殊“注释”：
+
+注释会被编译器直接忽略，注解则可以被编译器打包进入 class 文件，因此，注解是一种用作标注的“元数据”
+
+Java 的注解分为三类：
+
+**第一类**是由编译器使用的注解，例如：
+
+- `@Override`：让编译器检查该方法是否正确地实现了覆写；
+- `@SuppressWarnings`：告诉编译器忽略此处代码产生的警告。
+
+这类注解不会被编译进入 `.class` 文件
+
+**第二类**是由工具处理 `.class` 文件使用的注解，比如有些工具会在加载 class 的时候，对 class 做动态修改，实现一些特殊的功能。这类注解会被编译进入 `.class` 文件，但加载结束后并不会存在于内存中。
+
+**第三类**是在程序运行期能够读取的注解，它们在加载后一直存在于 JVM 中，这也是最常用的注解。例如，一个配置了 `@PostConstruct` 的方法会在调用构造方法后自动被调用。
+
+定义注解时，还可以定义配置参数，包括：
+
+- 所有基本类型；
+- String；
+- 枚举类型；
+- 基本类型、String、Class 以及枚举的数组。
+
+- 注解（Annotation）是 Java 语言用于工具处理的标注；
+- 注解可以配置参数，没有指定配置的参数使用默认值；
+- 如果参数名称是 `value`，且只有一个参数，那么可以省略参数名称。
+
+### 定义注解
+
+Java 语言使用 `@interface` 语法来定义注解
+
+```java
+public @interface Report {
+    int type() default 0;
+    String level() default "info";
+    String value() default "";
+}
+```
+
+### 元注解
+
+有一些注解可以修饰其他注解，这些注解就称为元注解（meta annotation）。Java 标准库已经定义了一些元注解，我们只需要使用元注解，通常不需要自己去编写元注解。
+
+#### @Target
+
+最常用的元注解是 `@Target`。使用 `@Target` 可以定义 `Annotation` 能够被应用于源码的哪些位置：
+
+- 类或接口：`ElementType.TYPE`；
+- 字段：`ElementType.FIELD`；
+- 方法：`ElementType.METHOD`；
+- 构造方法：`ElementType.CONSTRUCTOR`；
+- 方法参数：`ElementType.PARAMETER`。
+
+#### @Retention
+
+另一个重要的元注解 `@Retention` 定义了 `Annotation` 的生命周期：
+
+- 仅编译期：`RetentionPolicy.SOURCE`；
+- 仅 class 文件：`RetentionPolicy.CLASS`；
+- 运行期：`RetentionPolicy.RUNTIME`。
+
+如果 `@Retention` 不存在，则该 `Annotation` 默认为 `CLASS`。因为通常我们自定义的 `Annotation` 都是 `RUNTIME`，所以，务必要加上 `@Retention(RetentionPolicy.RUNTIME)` 这个元注解
+
+#### @Repeatable
+
+使用 `@Repeatable` 这个元注解可以定义 `Annotation` 是否可重复。
+
+#### @Inherited
+
+使用 `@Inherited` 定义子类是否可继承父类定义的 `Annotation`。`@Inherited` 仅针对 `@Target(ElementType.TYPE)` 类型的 `annotation` 有效，并且仅针对 `class` 的继承，对 `interface` 的继承无效
+
+在使用的时候，如果一个类用到了 `@Report`，则它的子类默认也定义了该注解：
+
+### 定义 Annotation 的步骤
+
+第一步，用 `@interface` 定义注解：
+
+```java
+public @interface Report {
+}
+```
+
+第二步，添加参数、默认值：
+
+```java
+public @interface Report {
+    int type() default 0;
+    String level() default "info";
+    String value() default "";
+}
+```
+
+第三步，用元注解配置注解：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Report {
+    int type() default 0;
+    String level() default "info";
+    String value() default "";
+}
+```
+
+其中，必须设置 `@Target` 和 `@Retention`，`@Retention` 一般设置为 `RUNTIME`，因为我们自定义的注解通常要求在运行期读取。
+
+### 处理注解
+
+如何读取 `RUNTIME` 类型的注解
+
+因为注解定义后也是一种 `class`，所有的注解都继承自 `java.lang.annotation.Annotation`，因此，读取注解，需要使用反射 API。
+
+Java 提供的使用反射 API 读取 `Annotation` 的方法包括：
+
+判断某个注解是否存在于 `Class`、`Field`、`Method` 或 `Constructor`：
+
+- `Class.isAnnotationPresent(Class)`
+- `Field.isAnnotationPresent(Class)`
+- `Method.isAnnotationPresent(Class)`
+- `Constructor.isAnnotationPresent(Class)`
+
+例如：
+
+```java
+// 判断@Report是否存在于Person类:
+Person.class.isAnnotationPresent(Report.class);
+```
+
+使用反射 API 读取 Annotation：
+
+- `Class.getAnnotation(Class)`
+- `Field.getAnnotation(Class)`
+- `Method.getAnnotation(Class)`
+- `Constructor.getAnnotation(Class)`
+
+读取方法参数的 `Annotation` 就比较麻烦一点，因为方法参数本身可以看成一个数组，而每个参数又可以定义多个注解，所以，一次获取方法参数的所有注解就必须用一个二维数组来表示。例如，对于以下方法定义的注解：
+
+```java
+public void hello(@NotNull @Range(max=5) String name, @NotNull String prefix) {
+}
+```
+
+先用反射获取 `Method` 实例，然后读取方法参数的所有注解：
+
+```java
+// 获取Method实例:
+Method m = ...
+// 获取所有参数的Annotation:
+Annotation[][] annos = m.getParameterAnnotations();
+// 第一个参数（索引为0）的所有Annotation:
+Annotation[] annosOfName = annos[0];
+for (Annotation anno : annosOfName) {
+    if (anno instanceof Range r) { // @Range注解
+        r.max();
+    }
+    if (anno instanceof NotNull n) { // @NotNull注解
+        //
+    }
+}
+```
+
+### 使用注解
+
+```java
+void check(Person person) throws IllegalArgumentException, ReflectiveOperationException {
+    // 遍历所有Field:
+    for (Field field : person.getClass().getFields()) {
+        // 获取Field定义的@Range:
+        Range range = field.getAnnotation(Range.class);
+        // 如果@Range存在:
+        if (range != null) {
+            // 获取Field的值:
+            Object value = field.get(person);
+            // 如果值是String:
+            if (value instanceof String s) {
+                // 判断值是否满足@Range的min/max:
+                if (s.length() < range.min() || s.length() > range.max()) {
+                    throw new IllegalArgumentException("Invalid field: " + field.getName());
+                }
+            }
+        }
+    }
+}
+```
+
+### 练习：使用 `@Range` 注解检查 Java Bean 的字段
+
+使用 `@Range` 注解来检查 Java Bean 的字段。如果字段类型是 `String`，就检查 `String` 的长度，如果字段是 `int`，就检查 `int` 的范围。
+
+```java
+public class Main {  
+  
+    public static void main(String[] args) throws Exception {  
+        Person p1 = new Person("Bob", "Beijing", 20);  
+        Person p2 = new Person("", "Shanghai", 20);  
+        Person p3 = new Person("Alice", "Shanghai", 199);  
+        for (Person p : new Person[] { p1, p2, p3 }) {  
+            try {  
+                check(p);  
+                System.out.println("Person " + p + " checked ok.");  
+            } catch (IllegalArgumentException e) {  
+                System.out.println("Person " + p + " checked failed: " + e);  
+            }  
+        }  
+    }  
+  
+    static void check(Person person) throws IllegalArgumentException, ReflectiveOperationException {  
+        for (Field field : person.getClass().getFields()) {  
+            Range range = field.getAnnotation(Range.class);  
+            if (range != null) {  
+                Object value = field.get(person);  
+                if(value instanceof String s){  
+                    if(s.length() < range.min() || s.length() > range.max()){  
+                        throw new IllegalArgumentException("Invalid field: " + field.getName());  
+                    }  
+                }  
+                if(value instanceof Integer i){  
+                    if(i < range.min() || i > range.max()){  
+                        throw new IllegalArgumentException("Invalid field: " + field.getName());  
+                    }  
+                }  
+            }  
+        }  
+    }  
+}  
+  
+  
+class Person {  
+  
+    @Range(min = 1, max = 20)  
+    public String name;  
+  
+    @Range(max = 10)  
+    public String city;  
+  
+    @Range(min = 1, max = 100)  
+    public int age;  
+  
+    public Person(String name, String city, int age) {  
+        this.name = name;  
+        this.city = city;  
+        this.age = age;  
+    }  
+  
+    @Override  
+    public String toString() {  
+        return String.format("{Person: name=%s, city=%s, age=%d}", name, city, age);  
+    }  
+}  
+  
+@Retention(RetentionPolicy.RUNTIME)  
+@Target(ElementType.FIELD)  
+@interface Range {  
+  
+    int min() default 0;  
+  
+    int max() default 255;  
+  
+}
+```
+
+## 7. 泛型
 
 泛型是一种“代码模板”，可以用一套代码套用各种类型。
 

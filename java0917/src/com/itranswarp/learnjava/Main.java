@@ -1,7 +1,10 @@
 package com.itranswarp.learnjava;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,54 +18,155 @@ import java.util.logging.Logger;
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
 
-import java.lang.reflect.Method;
-
-
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        String name = "Xiao Ming";
-        int age = 20;
-        Person p = new Person();
-        // TODO: 利用反射调用setName和setAge方法:
-        // 1.获取class
-        Class c = Person.class;
-        // 2.获取method
-        Method m = c.getDeclaredMethod("setName", String.class);
-        Method m2 = c.getDeclaredMethod("setAge", int.class);
-        // 3.进行调用
-        m.invoke(p, name);
-        m2.invoke(p, age);
-        System.out.println(p.getName()); // "Xiao Ming"
-        System.out.println(p.getAge()); // 20
+        Person p1 = new Person("Bob", "Beijing", 20);
+        Person p2 = new Person("", "Shanghai", 20);
+        Person p3 = new Person("Alice", "Shanghai", 199);
+        for (Person p : new Person[] { p1, p2, p3 }) {
+            try {
+                check(p);
+                System.out.println("Person " + p + " checked ok.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Person " + p + " checked failed: " + e);
+            }
+        }
     }
 
-
-
-
+    static void check(Person person) throws IllegalArgumentException, ReflectiveOperationException {
+        for (Field field : person.getClass().getFields()) {
+            Range range = field.getAnnotation(Range.class);
+            if (range != null) {
+                Object value = field.get(person);
+                if(value instanceof String s){
+                    if(s.length() < range.min() || s.length() > range.max()){
+                        throw new IllegalArgumentException("Invalid field: " + field.getName());
+                    }
+                }
+                if(value instanceof Integer i){
+                    if(i < range.min() || i > range.max()){
+                        throw new IllegalArgumentException("Invalid field: " + field.getName());
+                    }
+                }
+            }
+        }
+    }
 }
 
+
 class Person {
-    private String name;
-    private int age;
 
-    public String getName() {
-        return name;
-    }
+    @Range(min = 1, max = 20)
+    public String name;
 
-    public void setName(String name) {
+    @Range(max = 10)
+    public String city;
+
+    @Range(min = 1, max = 100)
+    public int age;
+
+    public Person(String name, String city, int age) {
         this.name = name;
-    }
-
-    public int getAge() {
-        return age;
-    }
-
-    public void setAge(int age) {
+        this.city = city;
         this.age = age;
     }
 
+    @Override
+    public String toString() {
+        return String.format("{Person: name=%s, city=%s, age=%d}", name, city, age);
+    }
 }
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+@interface Range {
+
+    int min() default 0;
+
+    int max() default 255;
+
+}
+
+
+
+
+
+//public class Main {
+//
+//    public static void main(String[] args) {
+//        HelloImpl hmpl = new HelloImpl();
+//
+//        InvocationHandler handler = new InvocationHandler(){
+//            @Override
+//            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+//                System.out.println("before " + method.getName());
+//                Object result = method.invoke(hmpl, args);
+//                System.out.println("after " + method.getName());
+//                return result;
+//            }
+//        };
+//
+//        Hello hello = (Hello) Proxy.newProxyInstance(
+//                Hello.class.getClassLoader(),
+//                new Class[]{Hello.class},
+//                handler
+//        );
+//
+//        System.out.println(hello.hello("Java"));
+//
+//    }
+//
+//}
+//
+//class HelloImpl implements Hello {
+//    public String hello(String name) {
+//        return "Hello, " + name;
+//    }
+//}
+//
+//interface Hello {
+//    String hello(String name);
+//}
+
+//    public static void main(String[] args) throws Exception {
+//        String name = "Xiao Ming";
+//        int age = 20;
+//        Person p = new Person();
+//        // TODO: 利用反射调用setName和setAge方法:
+//        // 1.获取class
+//        Class c = Person.class;
+//        // 2.获取method
+//        Method m = c.getDeclaredMethod("setName", String.class);
+//        Method m2 = c.getDeclaredMethod("setAge", int.class);
+//        // 3.进行调用
+//        m.invoke(p, name);
+//        m2.invoke(p, age);
+//        System.out.println(p.getName()); // "Xiao Ming"
+//        System.out.println(p.getAge()); // 20
+//    }
+
+//class Person {
+//    private String name;
+//    private int age;
+//
+//    public String getName() {
+//        return name;
+//    }
+//
+//    public void setName(String name) {
+//        this.name = name;
+//    }
+//
+//    public int getAge() {
+//        return age;
+//    }
+//
+//    public void setAge(int age) {
+//        this.age = age;
+//    }
+//
+//}
 
 
 //    public List<List<Integer>> threeSum(int[] nums) {
