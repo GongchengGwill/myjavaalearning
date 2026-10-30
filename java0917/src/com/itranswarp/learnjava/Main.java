@@ -5,9 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -19,74 +17,196 @@ import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
 
 public class Main {
+//    public static void main(String[] args) {
+//        Pair<Integer> p = new Pair<>(123, 456);
+//        int n = add(p);
+//        System.out.println(n);
+//    }
+//
+//    static int add(Pair<? extends Number> p) {
+//        Number first = p.getFirst();
+//        Number last = p.getLast();
+//        p.setFirst(new Integer(first.intValue() + 100));
+//        p.setLast(new Integer(last.intValue() + 100));
+//        return p.getFirst().intValue() + p.getLast().intValue();
+//    }
+//}
 
-    public static void main(String[] args) throws Exception {
-        Person p1 = new Person("Bob", "Beijing", 20);
-        Person p2 = new Person("", "Shanghai", 20);
-        Person p3 = new Person("Alice", "Shanghai", 199);
-        for (Person p : new Person[] { p1, p2, p3 }) {
-            try {
-                check(p);
-                System.out.println("Person " + p + " checked ok.");
-            } catch (IllegalArgumentException e) {
-                System.out.println("Person " + p + " checked failed: " + e);
+class Pair<T> {
+    private T first;
+    private T last;
+
+    public Pair(T first, T last) {
+        this.first = first;
+        this.last = last;
+    }
+
+    public T getFirst() {
+        return first;
+    }
+    public T getLast() {
+        return last;
+    }
+    public void setFirst(T first) {
+        this.first = first;
+    }
+    public void setLast(T last) {
+        this.last = last;
+    }
+}
+    class Solution {
+        public int subarraySum(int[] nums, int k) {
+            // 前缀和 加 哈希表解决
+            int n = nums.length, ans = 0;
+            HashMap<Integer,Integer> hm = new HashMap<>();
+            hm.put(0, 1);
+            int pre = 0;
+            for(int num : nums){
+                pre += num;
+                ans += hm.getOrDefault(pre - k, 0);
+                hm.put(pre, hm.getOrDefault(pre, 0) + 1);
             }
+            return ans;
         }
     }
 
-    static void check(Person person) throws IllegalArgumentException, ReflectiveOperationException {
-        for (Field field : person.getClass().getFields()) {
-            Range range = field.getAnnotation(Range.class);
-            if (range != null) {
-                Object value = field.get(person);
-                if(value instanceof String s){
-                    if(s.length() < range.min() || s.length() > range.max()){
-                        throw new IllegalArgumentException("Invalid field: " + field.getName());
-                    }
-                }
-                if(value instanceof Integer i){
-                    if(i < range.min() || i > range.max()){
-                        throw new IllegalArgumentException("Invalid field: " + field.getName());
-                    }
-                }
-            }
-        }
-    }
-}
 
 
-class Person {
-
-    @Range(min = 1, max = 20)
-    public String name;
-
-    @Range(max = 10)
-    public String city;
-
-    @Range(min = 1, max = 100)
-    public int age;
-
-    public Person(String name, String city, int age) {
-        this.name = name;
-        this.city = city;
-        this.age = age;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("{Person: name=%s, city=%s, age=%d}", name, city, age);
-    }
-}
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@interface Range {
-
-    int min() default 0;
-
-    int max() default 255;
-
-}
+//public class Main {
+//
+//    public static void main(String[] args) throws Exception {
+//        Person p1 = new Person("Bob", "Beijing", 20);
+//        Person p2 = new Person("", "Shanghai", 20);
+//        Person p3 = new Person("Alice", "Shanghai", 199);
+//        for (Person p : new Person[] { p1, p2, p3 }) {
+//            try {
+//                check(p);
+//                System.out.println("Person " + p + " checked ok.");
+//            } catch (IllegalArgumentException e) {
+//                System.out.println("Person " + p + " checked failed: " + e);
+//            }
+//        }
+//    }
+//
+////    public List<Integer> findAnagrams(String s, String p) {
+////        // 拿一个和p一样长的滑动窗口比对区别就可以了 如果区别为 0，那么就是一个可选索引
+////        int sLen = s.length(), pLen = p.length();
+////        if(sLen < pLen){
+////            return new ArrayList<Integer>();
+////        }
+////
+////        List<Integer> ans = new ArrayList<>();
+////        int[] count = new int[26];
+////        for(int i = 0; i < pLen; i++){
+////            count[p.charAt(i) - 'a']++;
+////            count[s.charAt(i) - 'a']--;
+////        }
+////
+////        int diff = 0;
+////        for(int j = 0; j < 26; j++){
+////            if(count[j] != 0){
+////                diff++;
+////            }
+////        }
+////
+////
+////        if(diff == 0) ans.add(0);
+////
+////        for(int i = 0; i < sLen - pLen; i++){
+////            if(count[s.charAt(i) - 'a'] == 1){
+////                diff--;
+////            } else if (count[s.charAt(i) - 'a'] == 0) {
+////                diff++;
+////            }
+////            count[s.charAt(i) - 'a']++;
+////
+////            if(count[s.charAt(i + pLen) - 'a'] == 0){
+////                diff++;
+////            } else if (count[s.charAt(i + pLen) - 'a'] == -1) {
+////                diff--;
+////            }
+////            count[s.charAt(i + pLen) - 'a']--;
+////
+////            if(diff == 0) ans.add(i + 1);
+////        }
+////
+////        return ans;
+////    }
+//
+//
+//
+////    public int lengthOfLongestSubstring(String s) {
+////        char[] ch = s.toCharArray();
+////        int ans = 0;
+////        HashSet<Character> hs = new HashSet<>();
+////        for(int left = 0, right = 0; right < ch.length; right++){
+////            while(hs.contains(ch[right])){
+////                hs.remove(ch[left]);
+////                left++;
+////            }
+////            hs.add(ch[right]);
+////            ans = Math.max(ans, right - left + 1);
+////        }
+////        return ans;
+////    }
+//
+//
+//
+//
+//
+//    static void check(Person person) throws IllegalArgumentException, ReflectiveOperationException {
+//        for (Field field : person.getClass().getFields()) {
+//            Range range = field.getAnnotation(Range.class);
+//            if (range != null) {
+//                Object value = field.get(person);
+//                if(value instanceof String s){
+//                    if(s.length() < range.min() || s.length() > range.max()){
+//                        throw new IllegalArgumentException("Invalid field: " + field.getName());
+//                    }
+//                }
+//                if(value instanceof Integer i){
+//                    if(i < range.min() || i > range.max()){
+//                        throw new IllegalArgumentException("Invalid field: " + field.getName());
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+//
+//
+//class Person {
+//
+//    @Range(min = 1, max = 20)
+//    public String name;
+//
+//    @Range(max = 10)
+//    public String city;
+//
+//    @Range(min = 1, max = 100)
+//    public int age;
+//
+//    public Person(String name, String city, int age) {
+//        this.name = name;
+//        this.city = city;
+//        this.age = age;
+//    }
+//
+//    @Override
+//    public String toString() {
+//        return String.format("{Person: name=%s, city=%s, age=%d}", name, city, age);
+//    }
+//}
+//
+//@Retention(RetentionPolicy.RUNTIME)
+//@Target(ElementType.FIELD)
+//@interface Range {
+//
+//    int min() default 0;
+//
+//    int max() default 255;
+//
+//}
 
 
 

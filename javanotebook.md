@@ -2529,14 +2529,13 @@ Java 的反射 API 提供的 Method 对象封装了方法的所有信息：
 Person p = new Person();
 ```
 
-如果通过反射来创建新的实例，可以调用 Class 提供的 newInstance() 方法，它只能调用该类的 public 无参数构造方法。如果构造方法带有参数，或者不是 public，就无法直接通过 `Class.newInstance()` 来调用：
+如果通过反射来创建新的实例，可以调用 Class 提供的 newInstance() 方法，它只能调用该类的public无参数构造方法。如果构造方法带有参数，或者不是public，就无法直接通过`Class.newInstance()`来调用：
 
 ```java
 Person p = Person.class.newInstance();
 ```
 
-`Constructor` 对象，它包含一个构造方法的所有信息，可以创建一个实例。`Constructor` 对象和 Method 非常类似，不同之处仅在于它是一个构造方法，并且，调用结果总是返回实例
-
+`Constructor`对象，它包含一个构造方法的所有信息，可以创建一个实例。`Constructor`对象和Method非常类似，不同之处仅在于它是一个构造方法，并且，调用结果总是返回实例
 ```java
 import java.lang.reflect.Constructor;
 
@@ -2556,21 +2555,19 @@ public class Main {
 }
 ```
 
-通过 Class 实例获取 Constructor 的方法如下：
+通过Class实例获取Constructor的方法如下：
 
-- `getConstructor(Class...)`：获取某个 `public` 的 `Constructor`；
-- `getDeclaredConstructor(Class...)`：获取某个 `Constructor`；
-- `getConstructors()`：获取所有 `public` 的 `Constructor`；
-- `getDeclaredConstructors()`：获取所有 `Constructor`。
+- `getConstructor(Class...)`：获取某个`public`的`Constructor`；
+- `getDeclaredConstructor(Class...)`：获取某个`Constructor`；
+- `getConstructors()`：获取所有`public`的`Constructor`；
+- `getDeclaredConstructors()`：获取所有`Constructor`。
 
-注意 `Constructor` 总是当前类定义的构造方法，和父类无关，因此不存在多态的问题。
+注意`Constructor`总是当前类定义的构造方法，和父类无关，因此不存在多态的问题。
 
-调用非 `public` 的 `Constructor` 时，必须首先通过 `setAccessible(true)` 设置允许访问。`setAccessible(true)` 可能会失败。
+调用非`public`的`Constructor`时，必须首先通过`setAccessible(true)`设置允许访问。`setAccessible(true)`可能会失败。
 
 ### 获取继承关系
-
-有了 `Class` 实例，我们还可以获取它的父类的 `Class`
-
+有了`Class`实例，我们还可以获取它的父类的`Class`
 ```java
 // reflection
 public class Main {
@@ -2585,8 +2582,7 @@ public class Main {
 }
 ```
 
-由于一个类可能实现一个或多个接口，通过 `Class` 我们就可以查询到实现的接口类型。例如，查询 `Integer` 实现的接口：
-
+由于一个类可能实现一个或多个接口，通过`Class`我们就可以查询到实现的接口类型。例如，查询`Integer`实现的接口：
 ```java
 // reflection
 import java.lang.reflect.Method;
@@ -2601,17 +2597,13 @@ public class Main {
     }
 }
 ```
+运行上述代码可知，`Integer`实现的接口有：
+- java.lang.Comparable
+- java.lang.constant.Constable
+- java.lang.constant.ConstantDesc
+要特别注意：`getInterfaces()`只返回当前类直接实现的接口类型，并不包括其父类实现的接口类型
 
-运行上述代码可知，`Integer` 实现的接口有：
-
-- `java.lang.Comparable`
-- `java.lang.constant.Constable`
-- `java.lang.constant.ConstantDesc`
-
-要特别注意：`getInterfaces()` 只返回当前类直接实现的接口类型，并不包括其父类实现的接口类型
-
-两个 `Class` 实例，要判断一个向上转型是否成立，可以调用 `isAssignableFrom()`：
-
+两个`Class`实例，要判断一个向上转型是否成立，可以调用`isAssignableFrom()`：
 ```java
 // Integer i = ?
 Integer.class.isAssignableFrom(Integer.class); // true，因为Integer可以赋值给Integer
@@ -2625,23 +2617,17 @@ Integer.class.isAssignableFrom(Number.class); // false，因为Number不能赋�
 
 ### 动态代理
 
-- 可以实例化 `class`（非 `abstract`）；
-- 不能实例化 `interface`
-
-所有 `interface` 类型的变量总是通过某个实例向上转型并赋值给接口类型变量的：
-
+- 可以实例化`class`（非`abstract`）；
+- 不能实例化`interface`
+所有`interface`类型的变量总是通过某个实例向上转型并赋值给接口类型变量的：
 ```java
 CharSequence cs = new StringBuilder();
 ```
+动态代理（Dynamic Proxy）：可以在运行期动态创建某个`interface`的实例。
 
-动态代理（Dynamic Proxy）：可以在运行期动态创建某个 `interface` 的实例。
-
-动态代码：先定义接口 `Hello`，但是并不去编写实现类，而是直接通过 JDK 提供的一个 `Proxy.newProxyInstance()` 创建了一个 `Hello` 接口对象。
-
-JDK 提供的动态创建接口对象的方式，就叫动态代理。
-
+动态代码：先定义接口`Hello`，但是并不去编写实现类，而是直接通过JDK提供的一个`Proxy.newProxyInstance()`创建了一个`Hello`接口对象。
+JDK提供的动态创建接口对象的方式，就叫动态代理。
 一个最简单的动态代理实现如下：
-
 ```java
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -2672,52 +2658,40 @@ interface Hello {
 }
 ```
 
-在运行期动态创建一个 `interface` 实例的方法如下：
+在运行期动态创建一个`interface`实例的方法如下：
+1. 定义一个`InvocationHandler`实例，它负责实现接口的方法调用；
+2. 通过`Proxy.newProxyInstance()`创建`interface`实例，它需要3个参数：
+    1. 使用的`ClassLoader`，通常就是接口类的`ClassLoader`；
+    2. 需要实现的接口数组，至少需要传入一个接口进去；
+    3. 用来处理接口方法调用的`InvocationHandler`实例。
+3. 将返回的`Object`强制转型为接口。
 
-1. 定义一个 `InvocationHandler` 实例，它负责实现接口的方法调用；
-2. 通过 `Proxy.newProxyInstance()` 创建 `interface` 实例，它需要3个参数：
-   1. 使用的 `ClassLoader`，通常就是接口类的 `ClassLoader`；
-   2. 需要实现的接口数组，至少需要传入一个接口进去；
-   3. 用来处理接口方法调用的 `InvocationHandler` 实例。
-3. 将返回的 `Object` 强制转型为接口。
-
-- Java 标准库提供了动态代理功能，允许在运行期动态创建一个接口的实例；
-- 动态代理是通过 `Proxy` 创建代理对象，然后将接口方法“代理”给 `InvocationHandler` 完成的。
+Java标准库提供了动态代理功能，允许在运行期动态创建一个接口的实例；
+动态代理是通过`Proxy`创建代理对象，然后将接口方法“代理”给`InvocationHandler`完成的。
 
 ## 6. 注解
 
-注解是放在 Java 源码的类、方法、字段、参数前的一种特殊“注释”：
-
-注释会被编译器直接忽略，注解则可以被编译器打包进入 class 文件，因此，注解是一种用作标注的“元数据”
-
-Java 的注解分为三类：
-
-**第一类**是由编译器使用的注解，例如：
-
+注解是放在Java源码的类、方法、字段、参数前的一种特殊“注释”：
+注释会被编译器直接忽略，注解则可以被编译器打包进入class文件，因此，注解是一种用作标注的“元数据”
+Java的注解分为三类：
+第一类是由编译器使用的注解，例如：
 - `@Override`：让编译器检查该方法是否正确地实现了覆写；
 - `@SuppressWarnings`：告诉编译器忽略此处代码产生的警告。
-
-这类注解不会被编译进入 `.class` 文件
-
-**第二类**是由工具处理 `.class` 文件使用的注解，比如有些工具会在加载 class 的时候，对 class 做动态修改，实现一些特殊的功能。这类注解会被编译进入 `.class` 文件，但加载结束后并不会存在于内存中。
-
-**第三类**是在程序运行期能够读取的注解，它们在加载后一直存在于 JVM 中，这也是最常用的注解。例如，一个配置了 `@PostConstruct` 的方法会在调用构造方法后自动被调用。
+这类注解不会被编译进入`.class`文件
+第二类是由工具处理`.class`文件使用的注解，比如有些工具会在加载class的时候，对class做动态修改，实现一些特殊的功能。这类注解会被编译进入`.class`文件，但加载结束后并不会存在于内存中。
+第三类是在程序运行期能够读取的注解，它们在加载后一直存在于JVM中，这也是最常用的注解。例如，一个配置了`@PostConstruct`的方法会在调用构造方法后自动被调用。
 
 定义注解时，还可以定义配置参数，包括：
-
 - 所有基本类型；
 - String；
 - 枚举类型；
-- 基本类型、String、Class 以及枚举的数组。
+- 基本类型、String、Class以及枚举的数组。
 
-- 注解（Annotation）是 Java 语言用于工具处理的标注；
-- 注解可以配置参数，没有指定配置的参数使用默认值；
-- 如果参数名称是 `value`，且只有一个参数，那么可以省略参数名称。
+注解（Annotation）是Java语言用于工具处理的标注：
+注解可以配置参数，没有指定配置的参数使用默认值；
+如果参数名称是`value`，且只有一个参数，那么可以省略参数名称。
 
-### 定义注解
-
-Java 语言使用 `@interface` 语法来定义注解
-
+Java语言使用`@interface`语法来定义注解
 ```java
 public @interface Report {
     int type() default 0;
@@ -2728,12 +2702,10 @@ public @interface Report {
 
 ### 元注解
 
-有一些注解可以修饰其他注解，这些注解就称为元注解（meta annotation）。Java 标准库已经定义了一些元注解，我们只需要使用元注解，通常不需要自己去编写元注解。
+有一些注解可以修饰其他注解，这些注解就称为元注解（meta annotation）。Java标准库已经定义了一些元注解，我们只需要使用元注解，通常不需要自己去编写元注解。
 
 #### @Target
-
-最常用的元注解是 `@Target`。使用 `@Target` 可以定义 `Annotation` 能够被应用于源码的哪些位置：
-
+最常用的元注解是`@Target`。使用`@Target`可以定义`Annotation`能够被应用于源码的哪些位置：
 - 类或接口：`ElementType.TYPE`；
 - 字段：`ElementType.FIELD`；
 - 方法：`ElementType.METHOD`；
@@ -2741,36 +2713,26 @@ public @interface Report {
 - 方法参数：`ElementType.PARAMETER`。
 
 #### @Retention
-
-另一个重要的元注解 `@Retention` 定义了 `Annotation` 的生命周期：
-
+另一个重要的元注解`@Retention`定义了`Annotation`的生命周期：
 - 仅编译期：`RetentionPolicy.SOURCE`；
-- 仅 class 文件：`RetentionPolicy.CLASS`；
+- 仅class文件：`RetentionPolicy.CLASS`；
 - 运行期：`RetentionPolicy.RUNTIME`。
-
-如果 `@Retention` 不存在，则该 `Annotation` 默认为 `CLASS`。因为通常我们自定义的 `Annotation` 都是 `RUNTIME`，所以，务必要加上 `@Retention(RetentionPolicy.RUNTIME)` 这个元注解
+如果`@Retention`不存在，则该`Annotation`默认为`CLASS`。因为通常我们自定义的`Annotation`都是`RUNTIME`，所以，务必要加上`@Retention(RetentionPolicy.RUNTIME)`这个元注解
 
 #### @Repeatable
-
-使用 `@Repeatable` 这个元注解可以定义 `Annotation` 是否可重复。
+使用`@Repeatable`这个元注解可以定义`Annotation`是否可重复。
 
 #### @Inherited
-
-使用 `@Inherited` 定义子类是否可继承父类定义的 `Annotation`。`@Inherited` 仅针对 `@Target(ElementType.TYPE)` 类型的 `annotation` 有效，并且仅针对 `class` 的继承，对 `interface` 的继承无效
-
-在使用的时候，如果一个类用到了 `@Report`，则它的子类默认也定义了该注解：
+使用`@Inherited`定义子类是否可继承父类定义的`Annotation`。`@Inherited`仅针对`@Target(ElementType.TYPE)`类型的`annotation`有效，并且仅针对`class`的继承，对`interface`的继承无效
+在使用的时候，如果一个类用到了`@Report`，则它的子类默认也定义了该注解：
 
 ### 定义 Annotation 的步骤
-
-第一步，用 `@interface` 定义注解：
-
+第一步，用`@interface`定义注解：
 ```java
 public @interface Report {
 }
 ```
-
 第二步，添加参数、默认值：
-
 ```java
 public @interface Report {
     int type() default 0;
@@ -2778,9 +2740,7 @@ public @interface Report {
     String value() default "";
 }
 ```
-
 第三步，用元注解配置注解：
-
 ```java
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -2790,47 +2750,34 @@ public @interface Report {
     String value() default "";
 }
 ```
+其中，必须设置`@Target`和`@Retention`，`@Retention`一般设置为`RUNTIME`，因为我们自定义的注解通常要求在运行期读取。
 
-其中，必须设置 `@Target` 和 `@Retention`，`@Retention` 一般设置为 `RUNTIME`，因为我们自定义的注解通常要求在运行期读取。
-
-### 处理注解
-
-如何读取 `RUNTIME` 类型的注解
-
-因为注解定义后也是一种 `class`，所有的注解都继承自 `java.lang.annotation.Annotation`，因此，读取注解，需要使用反射 API。
-
-Java 提供的使用反射 API 读取 `Annotation` 的方法包括：
-
-判断某个注解是否存在于 `Class`、`Field`、`Method` 或 `Constructor`：
-
-- `Class.isAnnotationPresent(Class)`
-- `Field.isAnnotationPresent(Class)`
-- `Method.isAnnotationPresent(Class)`
-- `Constructor.isAnnotationPresent(Class)`
-
+### 处理注释
+#### 如何读取 RUNTIME 类型的注解
+因为注解定义后也是一种`class`，所有的注解都继承自`java.lang.annotation.Annotation`，因此，读取注解，需要使用反射API。
+Java提供的使用反射API读取`Annotation`的方法包括：
+判断某个注解是否存在于`Class`、`Field`、`Method`或`Constructor`：
+- Class.isAnnotationPresent(Class)
+- Field.isAnnotationPresent(Class)
+- Method.isAnnotationPresent(Class)
+- Constructor.isAnnotationPresent(Class)
 例如：
-
 ```java
 // 判断@Report是否存在于Person类:
 Person.class.isAnnotationPresent(Report.class);
 ```
+使用反射API读取Annotation：
+- Class.getAnnotation(Class)
+- Field.getAnnotation(Class)
+- Method.getAnnotation(Class)
+- Constructor.getAnnotation(Class)
 
-使用反射 API 读取 Annotation：
-
-- `Class.getAnnotation(Class)`
-- `Field.getAnnotation(Class)`
-- `Method.getAnnotation(Class)`
-- `Constructor.getAnnotation(Class)`
-
-读取方法参数的 `Annotation` 就比较麻烦一点，因为方法参数本身可以看成一个数组，而每个参数又可以定义多个注解，所以，一次获取方法参数的所有注解就必须用一个二维数组来表示。例如，对于以下方法定义的注解：
-
+读取方法参数的`Annotation`就比较麻烦一点，因为方法参数本身可以看成一个数组，而每个参数又可以定义多个注解，所以，一次获取方法参数的所有注解就必须用一个二维数组来表示。例如，对于以下方法定义的注解：
 ```java
 public void hello(@NotNull @Range(max=5) String name, @NotNull String prefix) {
 }
 ```
-
-先用反射获取 `Method` 实例，然后读取方法参数的所有注解：
-
+先用反射获取`Method`实例，然后读取方法参数的所有注解：
 ```java
 // 获取Method实例:
 Method m = ...
@@ -2849,7 +2796,6 @@ for (Annotation anno : annosOfName) {
 ```
 
 ### 使用注解
-
 ```java
 void check(Person person) throws IllegalArgumentException, ReflectiveOperationException {
     // 遍历所有Field:
@@ -2872,9 +2818,9 @@ void check(Person person) throws IllegalArgumentException, ReflectiveOperationEx
 }
 ```
 
-### 练习：使用 `@Range` 注解检查 Java Bean 的字段
+### 练习：使用 `@Range` 注解检查 Java Bean 字段
 
-使用 `@Range` 注解来检查 Java Bean 的字段。如果字段类型是 `String`，就检查 `String` 的长度，如果字段是 `int`，就检查 `int` 的范围。
+练习：使用`@Range`注解来检查Java Bean的字段。如果字段类型是`String`，就检查`String`的长度，如果字段是`int`，就检查`int`的范围。
 
 ```java
 public class Main {  
@@ -2912,7 +2858,6 @@ public class Main {
         }  
     }  
 }  
-  
   
 class Person {  
   
@@ -3133,3 +3078,195 @@ public class IntPair extends Pair<Integer> {
   - 不能实例化 `T` 类型，例如：`new T()`。
 - 泛型方法要防止重复定义方法，例如：`public boolean equals(T obj)`；
 - 子类可以获取父类的泛型类型 `<T>`。
+
+### extends 通配符
+使用`Pair<? extends Number>`使得方法接收所有泛型类型为`Number`或`Number`子类的`Pair`类型
+代码如下：
+```java
+public class Main {
+    public static void main(String[] args) {
+        Pair<Integer> p = new Pair<>(123, 456);
+        int n = add(p);
+        System.out.println(n);
+    }
+
+    static int add(Pair<? extends Number> p) {
+        Number first = p.getFirst();
+        Number last = p.getLast();
+        return first.intValue() + last.intValue();
+    }
+}
+
+class Pair<T> {
+    private T first;
+    private T last;
+    public Pair(T first, T last) {
+        this.first = first;
+        this.last = last;
+    }
+    public T getFirst() {
+        return first;
+    }
+    public T getLast() {
+        return last;
+    }
+}
+```
+这样在给方法传入`Pair<Integer>`类型时，它符合参数`Pair<? extends Number>`类型。这种使用`<? extends Number>`的泛型定义称之为上界通配符（Upper Bounds Wildcards），即把泛型类型`T`的上界限定在`Number`了。
+
+`<? extends Number>`通配符的一个重要限制：方法参数签名`setFirst(? extends Number)`无法传递任何`Number`的子类型给`setFirst(? extends Number)`
+
+使用类似`<? extends Number>`通配符作为方法参数时表示：
+- 方法内部可以调用获取`Number`引用的方法，例如：`Number n = obj.getFirst();`；
+- 方法内部无法调用传入`Number`引用的方法（`null`除外），例如：`obj.setFirst(Number n);`。
+即一句话总结：使用`extends`通配符表示可以读，不能写。
+使用类似`<T extends Number>`定义泛型类时表示：
+- 泛型类型限定为`Number`以及`Number`的子类。
+
+### super 通配符
+使用`<? super Integer>`通配符作为方法参数，表示方法内部代码对于参数只能写，不能读。
+
+### 对比 extends 和 super 通配符
+我们再回顾一下`extends`通配符。作为方法参数，`<? extends T>`类型和`<? super T>`类型的区别在于：
+- `<? extends T>`允许调用读方法`T get()`获取`T`的引用，但不允许调用写方法`set(T)`传入`T`的引用（传入`null`除外）；
+- `<? super T>`允许调用写方法`set(T)`传入`T`的引用，但不允许调用读方法`T get()`获取`T`的引用（获取`Object`除外）。
+一个是允许读不允许写，另一个是允许写不允许读。
+
+```java
+public class Collections {
+    // 把src的每个元素复制到dest中:
+    public static <T> void copy(List<? super T> dest, List<? extends T> src) {
+        for (int i=0; i<src.size(); i++) {
+            T t = src.get(i);
+            dest.add(t);
+        }
+    }
+}
+```
+对于类型`<? extends T>`的变量`src`，我们可以安全地获取类型`T`的引用，而对于类型`<? super T>`的变量`dest`，我们可以安全地传入`T`的引用。
+这个`copy()`方法的定义就完美地展示了`extends`和`super`的意图：
+- `copy()`方法内部不会读取`dest`，因为不能调用`dest.get()`来获取`T`的引用；
+- `copy()`方法内部也不会修改`src`，因为不能调用`src.add(T)`。
+这个`copy()`方法可以安全地把一个`List<Integer>`添加到`List<Number>`，但是无法反过来添加：
+```java
+// copy List<Integer> to List<Number> ok:
+List<Number> numList = ...;
+List<Integer> intList = ...;
+Collections.copy(numList, intList);
+
+// ERROR: cannot copy List<Number> to List<Integer>:
+Collections.copy(intList, numList);
+```
+
+**PECS 原则**：Producer Extends Consumer Super。
+如果需要返回`T`，它是生产者（Producer），要使用`extends`通配符；如果需要写入`T`，它是消费者（Consumer），要使用`super`通配符。
+
+### 无限定通配符
+只定义一个`?`：
+```java
+void sample(Pair<?> p) {
+}
+```
+因为`<?>`通配符既没有`extends`，也没有`super`，因此：
+- 不允许调用`set(T)`方法并传入引用（`null`除外）；
+- 不允许调用`T get()`方法并获取`T`引用（只能获取`Object`引用）。
+既不能读，也不能写，那只能做一些`null`判断：
+```java
+static boolean isNull(Pair<?> p) {
+    return p.getFirst() == null || p.getLast() == null;
+}
+```
+
+### 泛型和反射
+Java的部分反射API也是泛型。
+
+部分反射API是泛型，例如：`Class<T>`，`Constructor<T>`；
+可以声明带泛型的数组，但不能直接创建带泛型的数组，必须强制转型；
+可以通过`Array.newInstance(Class<T>, int)`创建`T[]`数组，需要强制转型；
+同时使用泛型和可变参数时需要特别小心。
+
+> **📝 我的笔记**：泛型与反射这部分我没看懂，过于难以理解了，暂时先跳过，后续有时间再详细了解。
+
+## 8. JAVA集合
+一个Java对象可以在内部持有若干其他Java对象，并对外提供访问接口，我们把这种Java对象称为集合。
+
+Java标准库自带的`java.util`包提供了集合类：`Collection`，它是除`Map`外所有其他集合类的根接口。
+List   Set   Map
+
+Java访问集合总是通过统一的方式——迭代器（Iterator）来实现，无需知道集合内部元素是按什么方式存储的，就可以进行调用。
+
+### 使用 List
+遍历List的时候 不推荐使用for循环 
+```java
+public class Main {
+    public static void main(String[] args) {
+        List<String> list = List.of("apple", "pear", "banana");
+        for (int i=0; i<list.size(); i++) {
+            String s = list.get(i);
+            System.out.println(s);
+        }
+    }
+}
+```
+因为`get(int)`方法只有`ArrayList`的实现是高效的，换成`LinkedList`后，索引越大，访问速度越慢
+
+### 使用迭代器 Iterator
+`Iterator`对象有两个方法：`boolean hasNext()`判断是否有下一个元素，`E next()`返回下一个元素。因此，使用`Iterator`遍历`List`代码如下：
+```java
+public class Main {
+    public static void main(String[] args) {
+        List<String> list = List.of("apple", "pear", "banana");
+        for (Iterator<String> it = list.iterator(); it.hasNext(); ) {
+            String s = it.next();
+            System.out.println(s);
+        }
+    }
+}
+```
+
+把`List`变为`Array`有三种方法，第一种是调用`toArray()`方法直接返回一个`Object[]`数组：这种方法会丢失类型信息，所以实际应用很少。
+第二种方式是给`toArray(T[])`传入一个类型相同的`Array`，`List`内部自动把元素复制到传入的`Array`中：
+```java
+public class Main {
+    public static void main(String[] args) {
+        List<Integer> list = List.of(12, 34, 56);
+        Integer[] array = list.toArray(new Integer[3]);
+        for (Integer n : array) {
+            System.out.println(n);
+        }
+    }
+}
+```
+注意到这个`toArray(T[])`方法的泛型参数`<T>`并不是`List`接口定义的泛型参数`<E>`，所以，我们实际上可以传入其他类型的数组，例如我们传入`Number`类型的数组，返回的仍然是`Number`类型，也就是Integer的父类
+
+如果传入的数组不够大，那么`List`内部会创建一个新的刚好够大的数组，填充后返回；如果传入的数组比`List`元素还要多，那么填充完元素后，剩下的数组元素一律填充`null`
+
+实际上，最常用的是传入一个“恰好”大小的数组：
+```java
+Integer[] array = list.toArray(new Integer[list.size()]);
+```
+最后一种更简洁的写法是通过`List`接口定义的`T[] toArray(IntFunction<T[]> generator)`方法：
+```java
+Integer[] array = list.toArray(Integer[]::new);
+```
+
+反过来，把`Array`变为`List`就简单多了，通过`List.of(T...)`方法最简单：
+```java
+Integer[] array = { 1, 2, 3 };
+List<Integer> list = List.of(array);
+```
+
+### 编写 equals 方法
+- 自反性（Reflexive）：对于非`null`的`x`来说，`x.equals(x)`必须返回`true`；
+- 对称性（Symmetric）：对于非`null`的`x`和`y`来说，如果`x.equals(y)`为`true`，则`y.equals(x)`也必须为`true`；
+- 传递性（Transitive）：对于非`null`的`x`、`y`和`z`来说，如果`x.equals(y)`为`true`，`y.equals(z)`也为`true`，那么`x.equals(z)`也必须为`true`；
+- 一致性（Consistent）：对于非`null`的`x`和`y`来说，只要`x`和`y`状态不变，则`x.equals(y)`总是一致地返回`true`或者`false`；
+- 对`null`的比较：即`x.equals(null)`永远返回`false`。
+
+正确编写方法：
+1. 先确定实例“相等”的逻辑，即哪些字段相等，就认为实例相等；
+2. 用`instanceof`判断传入的待比较的`Object`是不是当前类型，如果是，继续比较，否则，返回`false`；
+3. 对引用类型用`Objects.equals()`比较，对基本类型直接用`==`比较。
+使用`Objects.equals()`比较两个引用类型是否相等的目的是省去了判断`null`的麻烦。两个引用类型都是`null`时它们也是相等的。
+如果不调用`List`的`contains()`、`indexOf()`这些方法，那么放入的元素就不需要实现`equals()`方法。
+
