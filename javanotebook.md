@@ -3270,3 +3270,315 @@ List<Integer> list = List.of(array);
 使用`Objects.equals()`比较两个引用类型是否相等的目的是省去了判断`null`的麻烦。两个引用类型都是`null`时它们也是相等的。
 如果不调用`List`的`contains()`、`indexOf()`这些方法，那么放入的元素就不需要实现`equals()`方法。
 
+
+### 使用 Map
+
+`Map<K, V>` 是一种键-值映射表，当我们调用 `put(K key, V value)` 方法时，就把 `key` 和 `value` 做了映射并放入 `Map`。当我们调用 `V get(K key)` 时，就可以通过 `key` 获取到对应的 `value`。如果 `key` 不存在，则返回 `null`
+
+Map 中不存在重复的 key，因为放入相同的 key，只会把原有的 key-value 对应的 value 给替换掉。
+
+#### 遍历 Map
+
+使用 `for each` 循环遍历 `Map` 实例的 `keySet()` 方法返回的 `Set` 集合
+
+遍历 `key` 和 `value` 可以使用 `for each` 循环遍历 `Map` 对象的 `entrySet()` 集合，它包含每一个 `key-value` 映射：
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        Map<String, Integer> map = new HashMap<>();
+        map.put("apple", 123);
+        map.put("pear", 456);
+        map.put("banana", 789);
+        for (Map.Entry<String, Integer> entry : map.entrySet()) {
+            String key = entry.getKey();
+            Integer value = entry.getValue();
+            System.out.println(key + " = " + value);
+        }
+    }
+}
+```
+
+- `Map` 是一种映射表，可以通过 `key` 快速查找 `value`；
+- 可以通过 `for each` 遍历 `keySet()`，也可以通过 `for each` 遍历 `entrySet()`，直接获取 `key-value`；
+- 最常用的一种 `Map` 实现是 `HashMap`。
+
+### 编写 hashCode 方法
+
+通过 `key` 计算索引的方式就是调用 `key` 对象的 `hashCode()` 方法，它返回一个 `int` 整数。
+
+正确使用 `Map` 必须保证：
+
+1. 作为 `key` 的对象必须正确覆写 `equals()` 方法，相等的两个 `key` 实例调用 `equals()` 必须返回 `true`；
+2. 作为 `key` 的对象还必须正确覆写 `hashCode()` 方法，且 `hashCode()` 方法要严格遵循以下规范：
+   - 如果两个对象相等，则两个对象的 `hashCode()` 必须相等；
+   - 如果两个对象不相等，则两个对象的 `hashCode()` 尽量不要相等。
+
+在正确实现 `equals()` 的基础上，我们还需要正确实现 `hashCode()`
+
+```java
+public class Person {
+    String firstName;
+    String lastName;
+    int age;
+
+    @Override
+    int hashCode() {
+        int h = 0;
+        h = 31 * h + firstName.hashCode();
+        h = 31 * h + lastName.hashCode();
+        h = 31 * h + age;
+        return h;
+    }
+}
+```
+
+如果 `firstName` 或 `lastName` 为 `null`，上述代码工作起来就会抛 `NullPointerException`。为了解决这个问题，我们在计算 `hashCode()` 的时候，经常借助 `Objects.hash()` 来计算：
+
+```java
+int hashCode() {
+    return Objects.hash(firstName, lastName, age);
+}
+```
+
+由于扩容会导致重新分布已有的 `key-value`，所以，频繁扩容对 `HashMap` 的性能影响很大。如果我们确定要使用一个容量为 `10000` 个 `key-value` 的 `HashMap`，更好的方式是创建 `HashMap` 时就指定容量
+
+### 使用 EnumMap
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        Map<DayOfWeek, String> map = new EnumMap<>(DayOfWeek.class);
+        map.put(DayOfWeek.MONDAY, "星期一");
+        map.put(DayOfWeek.TUESDAY, "星期二");
+        map.put(DayOfWeek.WEDNESDAY, "星期三");
+        map.put(DayOfWeek.THURSDAY, "星期四");
+        map.put(DayOfWeek.FRIDAY, "星期五");
+        map.put(DayOfWeek.SATURDAY, "星期六");
+        map.put(DayOfWeek.SUNDAY, "星期日");
+        System.out.println(map);
+        System.out.println(map.get(DayOfWeek.MONDAY));
+    }
+}
+```
+
+如果 `Map` 的 key 是 `enum` 类型，推荐使用 `EnumMap`，既保证速度，也不浪费空间。
+
+使用 `EnumMap` 的时候，根据面向抽象编程的原则，应持有 `Map` 接口。
+
+### 使用 TreeMap
+
+还有一种 `Map`，它在内部会对 Key 进行排序，这种 `Map` 就是 `SortedMap`。注意到 `SortedMap` 是接口，它的实现类是 `TreeMap`
+
+`SortedMap` 保证遍历时以 Key 的顺序来进行排序。例如，放入的 Key 是 `"apple"`、`"pear"`、`"orange"`，遍历的顺序一定是 `"apple"`、`"orange"`、`"pear"`，因为 `String` 默认按字母排序
+
+使用 `TreeMap` 时，放入的 Key 必须实现 `Comparable` 接口。如果作为 Key 的 class 没有实现 `Comparable` 接口，那么，必须在创建 `TreeMap` 时同时指定一个自定义排序算法
+
+```java
+Map<Person, Integer> map = new TreeMap<>(new Comparator<Person>() {
+            public int compare(Person p1, Person p2) {
+                return p1.name.compareTo(p2.name);
+            }
+        });
+```
+
+注意到 `Comparator` 接口要求实现一个比较方法，它负责比较传入的两个元素 `a` 和 `b`，如果 `a<b`，则返回负数，通常是 `-1`，如果 `a==b`，则返回 `0`，如果 `a>b`，则返回正数，通常是 `1`
+
+`TreeMap` 不使用 `equals()` 和 `hashCode()`，无需覆写
+
+- `SortedMap` 在遍历时严格按照 Key 的顺序遍历，最常用的实现类是 `TreeMap`；
+- 作为 `SortedMap` 的 Key 必须实现 `Comparable` 接口，或者传入 `Comparator`；
+- 要严格按照 `compare()` 规范实现比较逻辑，否则，`TreeMap` 将不能正常工作。
+
+### 使用 Properties
+
+配置文件的特点是，它的 Key-Value 一般都是 `String`-`String` 类型的，因此我们完全可以用 `Map<String, String>` 来表示它。
+
+因为配置文件非常常用，所以 Java 集合库提供了一个 `Properties` 来表示一组“配置”。
+
+Java 默认配置文件以 `.properties` 为扩展名，每行以 `key=value` 表示
+
+```properties
+# setting.properties
+
+last_open_file=/data/hello.txt
+auto_save_interval=60
+```
+
+可以从文件系统读取这个 `.properties` 文件：
+
+```java
+String f = "setting.properties";
+Properties props = new Properties();
+props.load(new java.io.FileInputStream(f));
+
+String filepath = props.getProperty("last_open_file");
+String interval = props.getProperty("auto_save_interval", "120");
+```
+
+可见，用 `Properties` 读取配置文件，一共有三步：
+
+1. 创建 `Properties` 实例；
+2. 调用 `load()` 读取文件；
+3. 调用 `getProperty()` 获取配置。
+
+调用 `getProperty()` 获取配置时，如果 key 不存在，将返回 `null`。我们还可以提供一个默认值，这样，当 key 不存在的时候，就返回默认值。
+
+也可以从 classpath 读取 `.properties` 文件，因为 `load(InputStream)` 方法接收一个 `InputStream` 实例，表示一个字节流，它不一定是文件流，也可以是从 jar 包中读取的资源流：
+
+```java
+Properties props = new Properties();
+props.load(getClass().getResourceAsStream("/common/setting.properties"));
+```
+
+- Java 集合库提供的 `Properties` 用于读写配置文件 `.properties`。`.properties` 文件可以使用 UTF-8 编码；
+- 可以从文件系统、classpath 或其他任何地方读取 `.properties` 文件；
+- 读写 `Properties` 时，注意仅使用 `getProperty()` 和 `setProperty()` 方法，不要调用继承而来的 `get()` 和 `put()` 等方法。
+
+### 使用 Set
+
+`Set` 用于存储不重复的元素集合，它主要提供以下几个方法：
+
+- 将元素添加进 `Set<E>`：`boolean add(E e)`
+- 将元素从 `Set<E>` 删除：`boolean remove(Object e)`
+- 判断是否包含元素：`boolean contains(Object e)`
+
+`Set` 用于存储不重复的元素集合：
+
+- 放入 `HashSet` 的元素与作为 `HashMap` 的 key 要求相同；
+- 放入 `TreeSet` 的元素与作为 `TreeMap` 的 Key 要求相同。
+
+- 利用 `Set` 可以去除重复元素；
+- 遍历 `SortedSet` 按照元素的排序顺序遍历，也可以自定义排序算法。
+
+### 使用 Queue
+
+队列 `Queue` 实现了一个先进先出（FIFO）的数据结构：
+
+- 通过 `add()`/`offer()` 方法将元素添加到队尾；
+- 通过 `remove()`/`poll()` 从队首获取元素并删除；
+- 通过 `element()`/`peek()` 从队首获取元素但不删除。
+
+要避免把 `null` 添加到队列。
+
+### 使用 PriorityQueue
+
+`PriorityQueue` 和 `Queue` 的区别在于，它的出队顺序与元素的优先级有关，对 `PriorityQueue` 调用 `remove()` 或 `poll()` 方法，返回的总是优先级最高的元素。
+
+- `PriorityQueue` 实现了一个优先队列：从队首获取元素时，总是获取优先级最高的元素；
+- `PriorityQueue` 默认按元素比较的顺序排序（必须实现 `Comparable` 接口），也可以通过 `Comparator` 自定义排序算法（元素就不必实现 `Comparable` 接口）。
+
+### 使用 Deque
+
+双端队列（Double Ended Queue）
+
+- 既可以添加到队尾，也可以添加到队首；
+- 既可以从队首获取，又可以从队尾获取。
+
+面向抽象编程的一个原则就是：尽量持有接口，而不是具体的实现类。
+
+`Deque` 实现了一个双端队列（Double Ended Queue），它可以：
+
+- 将元素添加到队尾或队首：`addLast()`/`offerLast()`/`addFirst()`/`offerFirst()`；
+- 从队首／队尾获取元素并删除：`removeFirst()`/`pollFirst()`/`removeLast()`/`pollLast()`；
+- 从队首／队尾获取元素但不删除：`getFirst()`/`peekFirst()`/`getLast()`/`peekLast()`；
+- 总是调用 `xxxFirst()`/`xxxLast()` 以便与 `Queue` 的方法区分开；
+- 避免把 `null` 添加到队列。
+
+### 使用 Stack
+
+栈（Stack）是一种后进先出（LIFO）的数据结构，操作栈的元素的方法有：
+
+- 把元素压栈：`push(E)`；
+- 把栈顶的元素“弹出”：`pop(E)`；
+- 取栈顶元素但不弹出：`peek(E)`。
+
+- 在 Java 中，我们用 `Deque` 可以实现 `Stack` 的功能，注意只调用 `push()`/`pop()`/`peek()` 方法，避免调用 `Deque` 的其他方法；
+- 不要使用遗留类 `Stack`。
+
+### 使用 Iterator
+
+如果我们自己编写了一个集合类，想要使用 `for each` 循环，只需满足以下条件：
+
+- 集合类实现 `Iterable` 接口，该接口要求返回一个 `Iterator` 对象；
+- 用 `Iterator` 对象迭代集合内部数据。
+
+`Iterator` 是一种抽象的数据访问模型。使用 `Iterator` 模式进行迭代的好处有：
+
+- 对任何集合都采用同一种访问模型；
+- 调用者对集合内部结构一无所知；
+- 集合类返回的 `Iterator` 对象知道如何迭代。
+
+Java 提供了标准的迭代器模型，即集合类实现 `java.util.Iterable` 接口，返回 `java.util.Iterator` 实例。
+
+### 使用 Collections
+
+#### 排序
+
+`Collections` 可以对 `List` 进行排序。因为排序会直接修改 `List` 元素的位置，因此必须传入可变 `List`：
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        List<String> list = new ArrayList<>();
+        list.add("apple");
+        list.add("pear");
+        list.add("orange");
+        // 排序前:
+        System.out.println(list);
+        Collections.sort(list);
+        // 排序后:
+        System.out.println(list);
+    }
+}
+```
+
+#### 洗牌
+
+传入一个有序的 `List`，可以随机打乱 `List` 内部元素的顺序，效果相当于让计算机洗牌：
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        List<Integer> list = new ArrayList<>();
+        for (int i=0; i<10; i++) {
+            list.add(i);
+        }
+        // 洗牌前:
+        System.out.println(list);
+        // 洗牌:
+        Collections.shuffle(list);
+        // 洗牌后:
+        System.out.println(list);
+    }
+}
+```
+
+`Collections` 类提供了一组工具方法来方便使用集合类：
+
+- 创建空集合；
+- 创建单元素集合；
+- 创建不可变集合；
+- 排序／洗牌等操作。
+
+## 9. IO
+
+### 输入和输出
+
+同步 IO 是指，读写 IO 时代码必须等待数据返回后才继续执行后续代码，它的优点是代码编写简单，缺点是 CPU 执行效率低。
+
+而异步 IO 是指，读写 IO 时仅发出请求，然后立刻执行后续代码，它的优点是 CPU 执行效率高，缺点是代码编写复杂。
+
+Java 标准库的包 `java.io` 提供了同步 IO，而 `java.nio` 则是异步 IO。
+
+IO 流是一种流式的数据输入/输出模型：
+
+- 二进制数据以 `byte` 为最小单位在 `InputStream`/`OutputStream` 中单向流动；
+- 字符数据以 `char` 为最小单位在 `Reader`/`Writer` 中单向流动。
+
+Java 标准库的 `java.io` 包提供了同步 IO 功能：
+
+- 字节流接口：`InputStream`/`OutputStream`；
+- 字符流接口：`Reader`/`Writer`。
+
+### File 对象

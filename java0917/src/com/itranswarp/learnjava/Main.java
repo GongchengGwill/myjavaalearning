@@ -54,21 +54,73 @@ class Pair<T> {
         this.last = last;
     }
 }
+
     class Solution {
-        public int subarraySum(int[] nums, int k) {
-            // 前缀和 加 哈希表解决
-            int n = nums.length, ans = 0;
-            HashMap<Integer,Integer> hm = new HashMap<>();
-            hm.put(0, 1);
-            int pre = 0;
-            for(int num : nums){
-                pre += num;
-                ans += hm.getOrDefault(pre - k, 0);
-                hm.put(pre, hm.getOrDefault(pre, 0) + 1);
+        public int[][] merge(int[][] intervals) {
+            Arrays.sort(intervals, new Comparator<int[]>() {
+                @Override
+                public int compare(int[] o1, int[] o2) {
+                    return Integer.compare(o1[0], o2[0]);
+                }
+            });
+
+            int[][] ans = new int[intervals.length][2];
+            int j = 0;
+            int n = 0;
+
+            for(int i = 1; i < intervals.length; i++){
+                if(intervals[i][0] > intervals[j][1]){
+                    ans[n][0] = intervals[j][0];
+                    ans[n][1] = intervals[j][1];
+                    n++;
+                    j = i;
+                    continue;
+                }else{
+                    if(intervals[j][1] > intervals[i][1]){
+                        continue;
+                    }else{
+                        intervals[j][1] = intervals[i][1];
+                    }
+                }
             }
-            return ans;
+            ans[n][0] = intervals[j][0];
+            ans[n][1] = intervals[j][1];
+            return Arrays.copyOf(ans, n+1);
         }
     }
+
+
+//    class Solution {
+//        public int maxSubArray(int[] nums) {
+//            //前缀和 对于i位置，我们需要比较 前面的最大子数组和加上当下的i位置数据 是否大于0 如果大于0 那么就能存储 若不大于0 那么就抛弃
+//            int n = nums.length;
+//            int[] a = new int[n];
+//            int ans = nums[0];
+//            a[0] = 0;
+//            for(int i = 1; i < n; i++){
+//                a[i] = Math.max(a[i-1] + nums[i-1], 0);
+//                ans = Math.max(a[i] + nums[i],ans);
+//            }
+//            return ans;
+//        }
+//    }
+
+
+//    class Solution {
+//        public int subarraySum(int[] nums, int k) {
+//            // 前缀和 加 哈希表解决
+//            int n = nums.length, ans = 0;
+//            HashMap<Integer,Integer> hm = new HashMap<>();
+//            hm.put(0, 1);
+//            int pre = 0;
+//            for(int num : nums){
+//                pre += num;
+//                ans += hm.getOrDefault(pre - k, 0);
+//                hm.put(pre, hm.getOrDefault(pre, 0) + 1);
+//            }
+//            return ans;
+//        }
+//    }
 
 
 
