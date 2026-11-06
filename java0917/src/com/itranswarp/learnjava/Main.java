@@ -17,6 +17,149 @@ import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
 
 public class Main {
+
+    public int climbStairs(int n) {
+        int a = 0, b = 1, c = 1;
+        for(int i = 1; i <= n; i++){
+            c = a + b;
+            a = b;
+            b = c;
+        }
+        return c;
+    }
+
+//    public List<Integer> spiralOrder(int[][] matrix) {
+//        int m = matrix.length, n = matrix[0].length;
+//        int left = 0, right = matrix[0].length - 1;
+//        int top = 0, below = matrix.length - 1;
+//        List<Integer> ans = new ArrayList<>();
+//        while(left <= right && top <= below){
+//            for(int i = left; i <= right; i++){
+//                ans.add(matrix[top][i]);
+//            }
+//            for(int j = top + 1; j <= below; j++){
+//                ans.add(matrix[j][right]);
+//            }
+//            if(left < right && top < below){
+//                for(int i = right - 1; i >= left; i--){
+//                    ans.add(matrix[below][i]);
+//                }
+//                for(int j = below; j >= top; j--){
+//                    ans.add(matrix[j][left]);
+//                }
+//            }
+//            left++;
+//            right--;
+//            top++;
+//            below--;
+//        }
+//        return ans;
+//    }
+
+//    public void rotate(int[] nums, int k) {
+//        int n = nums.length;
+//        k = k % n;
+//        int[] num_k = new int[n];
+//        for(int i = 0; i < k; i++){
+//            num_k[i] = nums[n-k+i];
+//        }
+//        for(int i = k; i < n; i++){
+//            num_k[i] = nums[i-k];
+//        }
+//        for(int i = 0; i < n; i++){
+//            nums[i] = num_k[i];
+//        }
+//    }
+
+
+//    public void setZeroes(int[][] matrix) {
+//        int m = matrix.length, n = matrix[0].length;
+//        boolean flagcolumn = false, flagrow = false;
+//        for(int i = 0; i < m; i++){
+//            if(matrix[i][0] == 0){
+//                flagcolumn = true;
+//            }
+//        }
+//        for(int j = 0; j < n; j++){
+//            if(matrix[0][j] == 0){
+//                flagrow = true;
+//            }
+//        }
+//
+//        //设置标识行和列的一个辅助数组
+//        for(int i = 1; i < matrix.length; i++){
+//            for(int j = 1; j < matrix[0].length; j++){
+//                if(matrix[i][j] == 0){
+//                    matrix[i][0] = matrix[0][j] = 0;
+//                }
+//            }
+//        }
+//
+//        for(int i = 1; i < matrix.length; i++){
+//            for(int j = 1; j < matrix[0].length; j++){
+//                if(matrix[i][0] == 0 || matrix[0][j] == 0){
+//                    matrix[i][j] = 0;
+//                }
+//            }
+//        }
+//
+//        if(flagcolumn){
+//            for(int i = 0; i < m; i++){
+//                matrix[i][0] = 0;
+//            }
+//        }
+//
+//        if(flagrow){
+//            for(int j = 0; j < n; j++){
+//                matrix[0][j] = 0;
+//            }
+//        }
+//
+//    }
+
+//    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+//        //若两者相交 那么两者后半段长度肯定相同 所以我们先算长度
+//        ListNode pla = headA;
+//        ListNode plb = headB;
+//        int la = 0, lb = 0;
+//
+//        while(pla != null){
+//            la++;
+//            pla = pla.next;
+//        }
+//        while(plb != null){
+//            lb++;
+//            plb = plb.next;
+//        }
+//
+//        ListNode pl = (la >= lb) ? headA : headB;
+//        ListNode ps = (la < lb) ? headA : headB;
+//        int diff = Math.abs(la - lb);
+//        while(diff > 0){
+//            pl = pl.next;
+//            diff--;
+//        }
+//        while(pl != null && ps != null){
+//            if(pl == ps){
+//                return pl;
+//            } else {
+//                pl = pl.next;
+//                ps = ps.next;
+//            }
+//        }
+//
+//        return null;
+//    }
+
+    public class ListNode{
+        int val;
+        ListNode next;
+        ListNode(int x) {
+            val = x;
+            next = null;
+        }
+    }
+}
 //    public static void main(String[] args) {
 //        Pair<Integer> p = new Pair<>(123, 456);
 //        int n = add(p);
@@ -32,62 +175,68 @@ public class Main {
 //    }
 //}
 
-class Pair<T> {
-    private T first;
-    private T last;
+//class Pair<T> {
+//    private T first;
+//    private T last;
+//
+//    public Pair(T first, T last) {
+//        this.first = first;
+//        this.last = last;
+//    }
+//
+//    public T getFirst() {
+//        return first;
+//    }
+//    public T getLast() {
+//        return last;
+//    }
+//    public void setFirst(T first) {
+//        this.first = first;
+//    }
+//    public void setLast(T last) {
+//        this.last = last;
+//    }
+//
+//
+//}
 
-    public Pair(T first, T last) {
-        this.first = first;
-        this.last = last;
-    }
 
-    public T getFirst() {
-        return first;
-    }
-    public T getLast() {
-        return last;
-    }
-    public void setFirst(T first) {
-        this.first = first;
-    }
-    public void setLast(T last) {
-        this.last = last;
-    }
-}
 
-    class Solution {
-        public int[][] merge(int[][] intervals) {
-            Arrays.sort(intervals, new Comparator<int[]>() {
-                @Override
-                public int compare(int[] o1, int[] o2) {
-                    return Integer.compare(o1[0], o2[0]);
-                }
-            });
 
-            int[][] ans = new int[intervals.length][2];
-            int j = 0;
-            int n = 0;
 
-            for(int i = 1; i < intervals.length; i++){
-                if(intervals[i][0] > intervals[j][1]){
-                    ans[n][0] = intervals[j][0];
-                    ans[n][1] = intervals[j][1];
-                    n++;
-                    j = i;
-                    continue;
-                }else{
-                    if(intervals[j][1] > intervals[i][1]){
-                        continue;
-                    }else{
-                        intervals[j][1] = intervals[i][1];
-                    }
-                }
-            }
-            ans[n][0] = intervals[j][0];
-            ans[n][1] = intervals[j][1];
-            return Arrays.copyOf(ans, n+1);
-        }
-    }
+//    class Solution {
+//        public int[][] merge(int[][] intervals) {
+//            Arrays.sort(intervals, new Comparator<int[]>() {
+//                @Override
+//                public int compare(int[] o1, int[] o2) {
+//                    return Integer.compare(o1[0], o2[0]);
+//                }
+//            });
+//
+//            int[][] ans = new int[intervals.length][2];
+//            int j = 0;
+//            int n = 0;
+//
+//            for(int i = 1; i < intervals.length; i++){
+//                if(intervals[i][0] > intervals[j][1]){
+//                    ans[n][0] = intervals[j][0];
+//                    ans[n][1] = intervals[j][1];
+//                    n++;
+//                    j = i;
+//                    continue;
+//                }else{
+//                    if(intervals[j][1] > intervals[i][1]){
+//                        continue;
+//                    }else{
+//                        intervals[j][1] = intervals[i][1];
+//                    }
+//                }
+//            }
+//            ans[n][0] = intervals[j][0];
+//            ans[n][1] = intervals[j][1];
+//            return Arrays.copyOf(ans, n+1);
+//        }
+//    }
 
 
 //    class Solution {
